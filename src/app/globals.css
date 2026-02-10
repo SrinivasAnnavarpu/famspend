@@ -94,6 +94,10 @@ a {
 
 .appBody {
   display: grid;
+  grid-template-columns: 1fr;
+}
+
+.appBodyOpen {
   grid-template-columns: 260px 1fr;
 }
 
