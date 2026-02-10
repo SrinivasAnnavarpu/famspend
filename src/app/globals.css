@@ -154,6 +154,36 @@ a {
   padding: 24px;
 }
 
+.filtersGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr 1fr;
+  gap: 14px;
+  align-items: end;
+}
+
+@media (max-width: 860px) {
+  .filtersGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .filtersGrid {
+    grid-template-columns: 1fr;
+  }
+  .appMain {
+    padding: 12px;
+  }
+  .container {
+    padding: 12px;
+  }
+  .table thead th,
+  .table tbody td {
+    padding: 10px 10px;
+    font-size: 13px;
+  }
+}
+
 .profileWrap {
   position: relative;
 }

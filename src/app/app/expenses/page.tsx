@@ -331,25 +331,25 @@ export default function ExpensesPage() {
         <AppNav />
       </div>
 
-      <div className="row" style={{ alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 260, flex: '1 1 260px' }}>
+      <div className="filtersGrid">
+        <div>
           <div className="help">Search</div>
           <input
             className="input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes, category, user…"
+            placeholder="Search notes, category…"
           />
         </div>
-        <div style={{ minWidth: 200 }}>
+        <div>
           <div className="help">From</div>
           <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
-        <div style={{ minWidth: 200 }}>
+        <div>
           <div className="help">To</div>
           <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
         </div>
-        <div style={{ minWidth: 220 }}>
+        <div>
           <div className="help">User</div>
           <select className="input" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
             <option value="all">All users</option>
@@ -360,7 +360,7 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <div style={{ minWidth: 220 }}>
+        <div>
           <div className="help">Category</div>
           <select className="input" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">All categories</option>
@@ -371,9 +371,11 @@ export default function ExpensesPage() {
             ))}
           </select>
         </div>
-        <div className="badge" style={{ marginLeft: 'auto' }}>
-          Total: {fmtMoney(totalBaseMinor, family?.base_currency ?? 'USD')}
-        </div>
+      </div>
+
+      <div className="row" style={{ marginTop: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="badge">Total: {fmtMoney(totalBaseMinor, family?.base_currency ?? 'USD')}</div>
+        <div className="help">Tip: swipe table horizontally for more columns.</div>
       </div>
 
       <div className="card" style={{ marginTop: 14 }}>
