@@ -531,9 +531,7 @@ export default function ExpensesPage() {
                       </option>
                     ))}
                   </select>
-                  <div className="help" style={{ marginTop: 6 }}>
-                    Default currency comes from your profile settings.
-                  </div>
+                  <span />
                 </div>
               </div>
 
