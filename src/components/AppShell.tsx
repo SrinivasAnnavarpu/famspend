@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="appBody">
-        <aside className={open ? 'sideNav sideNavOpen' : 'sideNav'}>
+        <aside className={open ? 'sideNav sideNavOpen' : 'sideNav sideNavClosed'}>
           <div className="sideSection">Main</div>
           <NavLink href="/app/add" label="Add" onNavigate={() => setOpen(false)} />
           <NavLink href="/app/expenses" label="Expenses" onNavigate={() => setOpen(false)} />

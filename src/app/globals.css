@@ -108,6 +108,10 @@ a {
   backdrop-filter: blur(10px);
 }
 
+.sideNavClosed {
+  display: none;
+}
+
 .sideLink {
   display: flex;
   padding: 10px 12px;
@@ -231,12 +235,17 @@ a {
   }
 
   .sideNav {
+    display: block;
     position: fixed;
     top: 64px;
     left: -280px;
     width: 260px;
     transition: left 180ms ease;
     z-index: 9998;
+  }
+
+  .sideNavClosed {
+    display: block;
   }
 
   .sideNavOpen {
