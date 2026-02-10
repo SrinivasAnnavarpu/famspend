@@ -182,7 +182,7 @@ export default function AppHome() {
             <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
           </div>
 
-          <div className="card" style={{ marginTop: 14 }}>
+          <div className="card" id="invite" style={{ marginTop: 14 }}>
             <div className="cardBody">
               <div className="h2">Invite</div>
               <p className="p" style={{ marginTop: 6 }}>Generate a single-use invite link (expires in 7 days).</p>

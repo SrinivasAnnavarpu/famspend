@@ -8,6 +8,7 @@ import { useExpensesRealtime } from '@/lib/expensesRealtime'
 import { getFxRate } from '@/lib/fx'
 import { toMinorUnits } from '@/lib/money'
 import { supabase } from '@/lib/supabaseClient'
+import { AppNav } from '@/components/AppNav'
 
 function errMsg(e: unknown) {
   if (e instanceof Error) return e.message
@@ -327,10 +328,7 @@ export default function ExpensesPage() {
             </div>
           </div>
         </div>
-        <div className="row">
-          <button className="btn btnPrimary" onClick={() => router.push('/app/add')}>Add expense</button>
-          <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
-        </div>
+        <AppNav />
       </div>
 
       <div className="row" style={{ alignItems: 'flex-end' }}>

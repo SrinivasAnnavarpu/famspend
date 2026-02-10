@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useToast } from '@/components/ToastProvider'
+import { AppNav } from '@/components/AppNav'
 import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
 
@@ -191,11 +192,7 @@ export default function AddExpensePage() {
             </div>
           </div>
         </div>
-        <div className="row">
-          <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
-          <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
-          <button className="btn btnGhost" onClick={() => router.push('/app')}>Settings</button>
-        </div>
+        <AppNav />
       </div>
 
       <div className="card">
