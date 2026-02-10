@@ -285,6 +285,23 @@ a {
   padding: 18px;
 }
 
+.formGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: end;
+}
+
+.formCol {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .formGrid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .kbd {
   font-size: 12px;
   padding: 2px 6px;

@@ -469,8 +469,8 @@ export default function ExpensesPage() {
               </button>
             </div>
             <div className="modalBody">
-              <div className="row" style={{ alignItems: 'flex-end' }}>
-                <div style={{ flex: '1 1 220px' }}>
+              <div className="formGrid2">
+                <div className="formCol">
                   <div className="help">Category</div>
                   <select
                     className="input"
@@ -485,7 +485,8 @@ export default function ExpensesPage() {
                     ))}
                   </select>
                 </div>
-                <div style={{ flex: '1 1 160px' }}>
+
+                <div className="formCol">
                   <div className="help">Date</div>
                   <input
                     className="input"
@@ -494,10 +495,8 @@ export default function ExpensesPage() {
                     onChange={(e) => setEdit((p) => (p ? { ...p, expense_date: e.target.value } : p))}
                   />
                 </div>
-              </div>
 
-              <div className="row" style={{ marginTop: 12, alignItems: 'flex-end' }}>
-                <div style={{ flex: '1 1 220px' }}>
+                <div className="formCol">
                   <div className="help">Amount</div>
                   <input
                     className="input"
@@ -506,8 +505,9 @@ export default function ExpensesPage() {
                     onChange={(e) => setEdit((p) => (p ? { ...p, amount: e.target.value } : p))}
                   />
                 </div>
-                <div style={{ flex: '1 1 220px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+
+                <div className="formCol">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 8 }}>
                     <div className="help">Currency</div>
                     <span className="tooltipWrap" tabIndex={0}>
                       <span className="infoIcon" aria-label="Currency info">i</span>
@@ -531,7 +531,6 @@ export default function ExpensesPage() {
                       </option>
                     ))}
                   </select>
-                  <span />
                 </div>
               </div>
 
