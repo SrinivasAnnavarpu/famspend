@@ -247,8 +247,8 @@ a {
     display: block;
     position: fixed;
     top: 64px;
-    left: -280px;
-    width: 260px;
+    left: -90vw;
+    width: min(320px, 86vw);
     transition: left 180ms ease;
     z-index: 9998;
   }
@@ -418,6 +418,8 @@ a {
 .tableWrap {
   width: 100%;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .table {
