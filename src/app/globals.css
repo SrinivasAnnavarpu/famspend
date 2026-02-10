@@ -1,13 +1,22 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg0: #f8fafc;
+  --bg1: #eef2ff;
+  --bg2: #ecfeff;
+  --text: #0f172a;
+  --muted: #475569;
+  --card: rgba(255, 255, 255, 0.78);
+  --card-border: rgba(15, 23, 42, 0.10);
+  --shadow: 0 18px 50px rgba(2, 6, 23, 0.12);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --primary: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-50: #eff6ff;
+
+  --success: #16a34a;
+  --danger: #dc2626;
+
+  --ring: 0 0 0 4px rgba(37, 99, 235, 0.20);
+  --radius: 16px;
 }
 
 html,
@@ -17,17 +26,18 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 10% 0%, var(--bg1), transparent 60%),
+    radial-gradient(900px 500px at 100% 20%, var(--bg2), transparent 55%),
+    linear-gradient(180deg, var(--bg0), #ffffff 60%);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
 a {
@@ -35,8 +45,163 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* layout */
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+}
+
+.brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: conic-gradient(from 180deg, #2563eb, #22c55e, #a855f7, #2563eb);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.22);
+}
+
+.brandTitle {
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.cardBody {
+  padding: 18px;
+}
+
+.h1 {
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -1.4px;
+  margin: 0;
+}
+
+.h2 {
+  font-size: 18px;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.p {
+  color: var(--muted);
+  margin: 10px 0 0;
+  line-height: 1.6;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 750;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.btnPrimary {
+  background: linear-gradient(180deg, var(--primary), var(--primary-700));
+  color: #fff;
+  border-color: rgba(29, 78, 216, 0.45);
+}
+
+.btnPrimary:hover {
+  border-color: rgba(29, 78, 216, 0.60);
+}
+
+.btnGhost {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: rgba(37, 99, 235, 0.5);
+}
+
+.help {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.alertError {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  color: #7f1d1d;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 16px;
+  }
+  .h1 {
+    font-size: 36px;
   }
 }

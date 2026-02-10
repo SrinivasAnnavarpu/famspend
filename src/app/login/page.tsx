@@ -66,62 +66,64 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 420, margin: '60px auto', padding: 16 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Login</h1>
-      <p style={{ color: '#64748b', marginTop: 6 }}>Email/password or Google.</p>
-
-      <div style={{ display: 'grid', gap: 10, marginTop: 18 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 13, color: '#334155' }}>Email</span>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            style={{ padding: 10, borderRadius: 10, border: '1px solid #cbd5e1' }}
-          />
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 13, color: '#334155' }}>Password</span>
-          <input
-            value={password}
-            type="password"
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            style={{ padding: 10, borderRadius: 10, border: '1px solid #cbd5e1' }}
-          />
-        </label>
-
-        {error ? (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: 10, borderRadius: 10 }}>
-            {error}
-          </div>
-        ) : null}
-
-        <button
-          disabled={busy}
-          onClick={signIn}
-          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #0f172a', background: '#0f172a', color: 'white', fontWeight: 700 }}
-        >
-          Sign in
-        </button>
-
-        <button
-          disabled={busy}
-          onClick={signUp}
-          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', color: '#0f172a', fontWeight: 700 }}
-        >
-          Sign up
-        </button>
-
-        <button
-          disabled={busy}
-          onClick={signInWithGoogle}
-          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', color: '#0f172a', fontWeight: 700 }}
-        >
-          Continue with Google
-        </button>
+    <div className="container" style={{ maxWidth: 560 }}>
+      <div className="header">
+        <div className="brand">
+          <div className="logo" aria-hidden />
+          <div className="brandTitle">FamSpend</div>
+        </div>
       </div>
-    </main>
+
+      <div className="card">
+        <div className="cardBody" style={{ padding: 22 }}>
+          <h1 className="h1" style={{ fontSize: 30 }}>Welcome back</h1>
+          <p className="p">Sign in with email or Google.</p>
+
+          <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span className="help">Email</span>
+              <input
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </label>
+
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span className="help">Password</span>
+              <input
+                className="input"
+                value={password}
+                type="password"
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </label>
+
+            {error ? <div className="alertError">{error}</div> : null}
+
+            <div className="row" style={{ marginTop: 4 }}>
+              <button className="btn btnPrimary" disabled={busy} onClick={signIn}>
+                Sign in
+              </button>
+              <button className="btn" disabled={busy} onClick={signUp}>
+                Sign up
+              </button>
+            </div>
+
+            <button className="btn btnGhost" disabled={busy} onClick={signInWithGoogle}>
+              Continue with Google
+            </button>
+
+            <p className="help" style={{ marginTop: 8 }}>
+              Tip: Use the same account on both phones to sync into the same family.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

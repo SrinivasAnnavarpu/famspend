@@ -2,21 +2,71 @@ import Link from 'next/link'
 
 export default function Home() {
   return (
-    <main style={{ maxWidth: 720, margin: '40px auto', padding: 16 }}>
-      <h1 style={{ fontSize: 40, letterSpacing: -0.5, margin: 0 }}>FamSpend</h1>
-      <p style={{ color: '#475569', marginTop: 8 }}>
-        Free family expense tracker (web + PWA).
-      </p>
-
-      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <Link href="/login">Go to login</Link>
-        <Link href="/app">Open app</Link>
+    <div className="container">
+      <div className="header">
+        <div className="brand">
+          <div className="logo" aria-hidden />
+          <div className="brandTitle">FamSpend</div>
+        </div>
+        <div className="row">
+          <Link className="btn btnGhost" href="/login">Sign in</Link>
+          <Link className="btn btnPrimary" href="/app">Open app</Link>
+        </div>
       </div>
 
-      <hr style={{ margin: '24px 0', border: 0, borderTop: '1px solid #e2e8f0' }} />
-      <p style={{ color: '#64748b', fontSize: 14 }}>
-        Note: this is a skeleton. Next step is the data model (families, categories, expenses) and the Add Expense flow.
-      </p>
-    </main>
+      <div className="card">
+        <div className="cardBody" style={{ padding: 28 }}>
+          <div className="badge">Free • Web + PWA • Multi-currency</div>
+          <h1 className="h1" style={{ marginTop: 14 }}>
+            Track family expenses
+            <br />
+            across currencies.
+          </h1>
+          <p className="p">
+            Fast entry. Shared with your family. Auto daily FX rate (by expense date). Export to CSV.
+          </p>
+
+          <div className="row" style={{ marginTop: 18 }}>
+            <Link className="btn btnPrimary" href="/login">
+              Create account
+            </Link>
+            <Link className="btn" href="/app">
+              Continue
+            </Link>
+          </div>
+
+          <div className="row" style={{ marginTop: 18 }}>
+            <div className="card" style={{ flex: '1 1 240px' }}>
+              <div className="cardBody">
+                <div className="h2">Simple entry</div>
+                <p className="p" style={{ marginTop: 6 }}>
+                  Category • Amount • Date. Currency is automatic.
+                </p>
+              </div>
+            </div>
+            <div className="card" style={{ flex: '1 1 240px' }}>
+              <div className="cardBody">
+                <div className="h2">Accurate totals</div>
+                <p className="p" style={{ marginTop: 6 }}>
+                  We store the FX rate used with each expense, so reports stay consistent.
+                </p>
+              </div>
+            </div>
+            <div className="card" style={{ flex: '1 1 240px' }}>
+              <div className="cardBody">
+                <div className="h2">Export anytime</div>
+                <p className="p" style={{ marginTop: 6 }}>
+                  Download CSV for Excel/Sheets and share with your family.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="help" style={{ marginTop: 18 }}>
+            Tip: on mobile, use “Add to Home Screen” to install as a PWA.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
