@@ -94,11 +94,11 @@ a {
 
 .appBody {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 260px 1fr;
 }
 
-.appBodyOpen {
-  grid-template-columns: 260px 1fr;
+.appBodyClosed {
+  grid-template-columns: 1fr;
 }
 
 .sideNav {
@@ -235,6 +235,9 @@ a {
 /* Mobile: sidebar becomes overlay */
 @media (max-width: 860px) {
   .appBody {
+    grid-template-columns: 1fr;
+  }
+  .appBodyClosed {
     grid-template-columns: 1fr;
   }
 

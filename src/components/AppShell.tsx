@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { profile } = useCurrentFamily()
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const who = useMemo(() => {
@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className={open ? 'appBody appBodyOpen' : 'appBody'}>
+      <div className={open ? 'appBody' : 'appBody appBodyClosed'}>
         <aside className={open ? 'sideNav sideNavOpen' : 'sideNav sideNavClosed'}>
           <div className="sideSection">Main</div>
           <NavLink href="/app/add" label="Add" onNavigate={() => setOpen(false)} />
