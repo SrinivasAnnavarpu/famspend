@@ -24,8 +24,9 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) throw error
       alert('Signup successful. If email confirmation is enabled, check your inbox.')
-    } catch (e: any) {
-      setError(e?.message ?? String(e))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg)
     } finally {
       setBusy(false)
     }
@@ -38,8 +39,9 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       router.replace('/app')
-    } catch (e: any) {
-      setError(e?.message ?? String(e))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg)
     } finally {
       setBusy(false)
     }
@@ -56,8 +58,9 @@ export default function LoginPage() {
         },
       })
       if (error) throw error
-    } catch (e: any) {
-      setError(e?.message ?? String(e))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg)
       setBusy(false)
     }
   }
