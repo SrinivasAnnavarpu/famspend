@@ -507,7 +507,15 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div style={{ flex: '1 1 220px' }}>
-                  <div className="help">Currency</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div className="help">Currency</div>
+                    <span className="tooltipWrap" tabIndex={0}>
+                      <span className="infoIcon" aria-label="Currency info">i</span>
+                      <span className="tooltip">
+                        Default currency comes from your profile settings. You can change currency here when editing (useful for travel expenses).
+                      </span>
+                    </span>
+                  </div>
                   <select
                     className="input"
                     value={edit.currency_original}
