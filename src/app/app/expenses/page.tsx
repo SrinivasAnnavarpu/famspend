@@ -508,20 +508,23 @@ export default function ExpensesPage() {
                 </div>
                 <div style={{ flex: '1 1 220px' }}>
                   <div className="help">Currency</div>
-                  <input
+                  <select
                     className="input"
-                    list="currency-list"
                     value={edit.currency_original}
-                    onChange={(e) => setEdit((p) => (p ? { ...p, currency_original: e.target.value.toUpperCase() } : p))}
-                    placeholder={profile?.default_currency ?? 'USD'}
-                  />
-                  <datalist id="currency-list">
-                    {currencyChoices.map((c) => (
-                      <option key={c} value={c} />
+                    onChange={(e) => setEdit((p) => (p ? { ...p, currency_original: e.target.value } : p))}
+                  >
+                    {(() => {
+                      const preferred = (profile?.default_currency ?? 'USD').toUpperCase()
+                      const set = new Set([preferred, ...currencyChoices])
+                      return Array.from(set)
+                    })().map((c) => (
+                      <option key={c} value={c}>
+                        {c}{c === (profile?.default_currency ?? 'USD').toUpperCase() ? ' (default)' : ''}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                   <div className="help" style={{ marginTop: 6 }}>
-                    Tip: you can type any 3-letter currency code.
+                    Default currency comes from your profile settings.
                   </div>
                 </div>
               </div>
