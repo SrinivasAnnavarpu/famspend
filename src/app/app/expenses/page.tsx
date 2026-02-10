@@ -31,7 +31,13 @@ type ExpenseRow = {
   fx_rate: number
   fx_date: string
   notes: string | null
-  categories: { id: string; name: string } | null
+  // Supabase sometimes returns related rows as an array depending on relationship inference
+  categories: { id: string; name: string } | { id: string; name: string }[] | null
+}
+
+function normalizeCategory(x: ExpenseRow['categories']): { id: string; name: string } | null {
+  if (!x) return null
+  return Array.isArray(x) ? x[0] ?? null : x
 }
 
 type EditState = {
@@ -70,6 +76,7 @@ export default function ExpensesPage() {
   const [edit, setEdit] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
 
   const currencyChoices = useMemo(
     () => ['USD', 'INR', 'EUR', 'GBP', 'CAD', 'AUD', 'SGD', 'JPY'],
@@ -148,7 +155,8 @@ export default function ExpensesPage() {
 
       const { data: ex, error: eErr } = await q
       if (eErr) throw eErr
-      return (ex ?? []) as ExpenseRow[]
+      const list = ((ex ?? []) as unknown as ExpenseRow[]).map((r) => ({ ...r, categories: normalizeCategory(r.categories) }))
+      return list
     },
     [familyId, start, end, userFilter, categoryFilter, debouncedSearch]
   )
@@ -205,6 +213,14 @@ export default function ExpensesPage() {
     void load()
   }, [load])
 
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 520px)')
+    const sync = () => setIsMobile(mq.matches)
+    sync()
+    mq.addEventListener?.('change', sync)
+    return () => mq.removeEventListener?.('change', sync)
+  }, [])
+
   useExpensesRealtime({
     familyId,
     onChange: () => {
@@ -240,7 +256,7 @@ export default function ExpensesPage() {
     (r: ExpenseRow) => {
       setEdit({
         id: r.id,
-        category_id: r.categories?.id ?? null,
+        category_id: normalizeCategory(r.categories)?.id ?? null,
         expense_date: r.expense_date,
         amount: toMajor(r.amount_original_minor),
         currency_original: r.currency_original,
@@ -378,77 +394,131 @@ export default function ExpensesPage() {
         <div className="help">Tip: swipe table horizontally for more columns.</div>
       </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <div className="cardBody" style={{ padding: 0 }}>
-          {busy ? <div className="tableBusyBar" /> : null}
-          <div className="tableWrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Category</th>
-                  <th>Added by</th>
-                  <th style={{ textAlign: 'right' }}>Amount</th>
-                  <th style={{ textAlign: 'right' }}>Base</th>
-                  <th>Notes</th>
-                  <th style={{ width: 140 }} />
-                </tr>
-              </thead>
-              <tbody>
-                {busy && rows.length === 0 ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={`sk-${i}`}>
-                      <td><div className="skeleton" style={{ width: 92 }} /></td>
-                      <td><div className="skeleton" style={{ width: 120 }} /></td>
-                      <td><div className="skeleton" style={{ width: 110 }} /></td>
-                      <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
-                      <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
-                      <td><div className="skeleton" style={{ width: 220 }} /></td>
-                      <td><div className="skeleton" style={{ width: 90, marginLeft: 'auto' }} /></td>
-                    </tr>
-                  ))
-                ) : rows.length === 0 ? (
+      {isMobile ? (
+        <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
+          {busy && rows.length === 0 ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <div className="card" key={`skm-${i}`}>
+                <div className="cardBody" style={{ padding: 14 }}>
+                  <div className="skeleton" style={{ width: 140, height: 14 }} />
+                  <div className="skeleton" style={{ width: 90, height: 14, marginTop: 10 }} />
+                </div>
+              </div>
+            ))
+          ) : rows.length === 0 ? (
+            <div className="card">
+              <div className="cardBody" style={{ padding: 16, color: '#64748b' }}>
+                No expenses for this range.
+              </div>
+            </div>
+          ) : (
+            rows.map((r) => (
+              <button
+                key={r.id}
+                className="card"
+                style={{ textAlign: 'left', padding: 0, cursor: 'pointer' }}
+                onClick={() => openEdit(r)}
+              >
+                <div
+                  className="cardBody"
+                  style={{
+                    padding: 14,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div className="help">Category</div>
+                    <div style={{ fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {normalizeCategory(r.categories)?.name ?? '—'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="help">Amount</div>
+                    <div style={{ fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
+                      {fmtMoney(r.amount_original_minor, r.currency_original)}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="card" style={{ marginTop: 14 }}>
+          <div className="cardBody" style={{ padding: 0 }}>
+            {busy ? <div className="tableBusyBar" /> : null}
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
                   <tr>
-                    <td colSpan={7} style={{ padding: 18, color: '#64748b' }}>
-                      No expenses for this range.
-                    </td>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Added by</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
+                    <th style={{ textAlign: 'right' }}>Base</th>
+                    <th>Notes</th>
+                    <th style={{ width: 140 }} />
                   </tr>
-                ) : (
-                  rows.map((r) => (
-                    <tr key={r.id}>
-                      <td style={{ whiteSpace: 'nowrap' }}>{r.expense_date}</td>
-                      <td>{r.categories?.name ?? '—'}</td>
-                      <td>{memberName(r.created_by)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {fmtMoney(r.amount_original_minor, r.currency_original)}
-                      </td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {fmtMoney(r.amount_base_minor, r.currency_base)}
-                      </td>
-                      <td style={{ maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.notes ?? ''}
-                      </td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button className="btn" style={{ padding: '6px 10px', borderRadius: 10 }} onClick={() => openEdit(r)}>
-                          Edit
-                        </button>
-                        <button
-                          className="btn"
-                          style={{ padding: '6px 10px', borderRadius: 10, marginLeft: 8 }}
-                          disabled={deletingId === r.id}
-                          onClick={() => void deleteExpense(r.id)}
-                        >
-                          {deletingId === r.id ? '…' : 'Delete'}
-                        </button>
+                </thead>
+                <tbody>
+                  {busy && rows.length === 0 ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td><div className="skeleton" style={{ width: 92 }} /></td>
+                        <td><div className="skeleton" style={{ width: 120 }} /></td>
+                        <td><div className="skeleton" style={{ width: 110 }} /></td>
+                        <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
+                        <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
+                        <td><div className="skeleton" style={{ width: 220 }} /></td>
+                        <td><div className="skeleton" style={{ width: 90, marginLeft: 'auto' }} /></td>
+                      </tr>
+                    ))
+                  ) : rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 18, color: '#64748b' }}>
+                        No expenses for this range.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    rows.map((r) => (
+                      <tr key={r.id}>
+                        <td style={{ whiteSpace: 'nowrap' }}>{r.expense_date}</td>
+                        <td>{normalizeCategory(r.categories)?.name ?? '—'}</td>
+                        <td>{memberName(r.created_by)}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {fmtMoney(r.amount_original_minor, r.currency_original)}
+                        </td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {fmtMoney(r.amount_base_minor, r.currency_base)}
+                        </td>
+                        <td style={{ maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {r.notes ?? ''}
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button className="btn" style={{ padding: '6px 10px', borderRadius: 10 }} onClick={() => openEdit(r)}>
+                            Edit
+                          </button>
+                          <button
+                            className="btn"
+                            style={{ padding: '6px 10px', borderRadius: 10, marginLeft: 8 }}
+                            disabled={deletingId === r.id}
+                            onClick={() => void deleteExpense(r.id)}
+                          >
+                            {deletingId === r.id ? '…' : 'Delete'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div ref={loadMoreRef} style={{ height: 1 }} />
 

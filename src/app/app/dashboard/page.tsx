@@ -19,6 +19,16 @@ type ExpenseRow = {
   categories: { name: string } | null
 }
 
+type DbExpenseRow = Omit<ExpenseRow, 'categories'> & {
+  // Supabase sometimes returns related rows as an array depending on relationship inference
+  categories: { name: string } | { name: string }[] | null
+}
+
+function normalizeCategory(x: DbExpenseRow['categories']): { name: string } | null {
+  if (!x) return null
+  return Array.isArray(x) ? x[0] ?? null : x
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const toast = useToast()
@@ -65,7 +75,7 @@ export default function DashboardPage() {
       return
     }
 
-    const list = (rows ?? []) as ExpenseRow[]
+    const list = ((rows ?? []) as DbExpenseRow[]).map((r) => ({ ...r, categories: normalizeCategory(r.categories) }))
     const total = list.reduce((acc, r) => acc + Number(r.amount_base_minor ?? 0), 0)
     setMonthTotalMinor(total)
 
@@ -125,9 +135,11 @@ export default function DashboardPage() {
       categories: { name: string } | null
     }
 
-    const out = ((rows ?? []) as ExportRow[]).map((r) => ({
-      date: r.expense_date,
-      category: r.categories?.name ?? '',
+    const out = ((rows ?? []) as (Omit<ExportRow, 'categories'> & { categories: ExportRow['categories'] | ExportRow['categories'][] })[]).map((r) => {
+      const cat = Array.isArray(r.categories) ? (r.categories[0] ?? null) : r.categories
+      return {
+        date: r.expense_date,
+        category: cat?.name ?? '',
       added_by: memberName(r.created_by),
       amount_original: (Number(r.amount_original_minor) / 100).toFixed(2),
       currency_original: r.currency_original,
@@ -135,8 +147,9 @@ export default function DashboardPage() {
       fx_date: r.fx_date,
       amount_base: (Number(r.amount_base_minor) / 100).toFixed(2),
       currency_base: r.currency_base,
-      notes: r.notes ?? '',
-    }))
+        notes: r.notes ?? '',
+      }
+    })
 
     const csv = toCsv(out)
     const filename = `famspend-${start}_to_${end}.csv`
