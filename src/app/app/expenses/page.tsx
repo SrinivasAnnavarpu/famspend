@@ -170,6 +170,7 @@ export default function ExpensesPage() {
 
       <div className="card" style={{ marginTop: 14 }}>
         <div className="cardBody" style={{ padding: 0 }}>
+          {busy ? <div className="tableBusyBar" /> : null}
           <div className="tableWrap">
             <table className="table">
               <thead>
@@ -183,10 +184,21 @@ export default function ExpensesPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {busy && rows.length === 0 ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={`sk-${i}`}>
+                      <td><div className="skeleton" style={{ width: 92 }} /></td>
+                      <td><div className="skeleton" style={{ width: 120 }} /></td>
+                      <td><div className="skeleton" style={{ width: 110 }} /></td>
+                      <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
+                      <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
+                      <td><div className="skeleton" style={{ width: 220 }} /></td>
+                    </tr>
+                  ))
+                ) : rows.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ padding: 18, color: '#64748b' }}>
-                      {busy ? 'Loading…' : 'No expenses for this range.'}
+                      No expenses for this range.
                     </td>
                   </tr>
                 ) : (
