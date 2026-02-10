@@ -45,6 +45,7 @@ export default function AddExpensePage() {
   const [categoryId, setCategoryId] = useState<string>('')
   const [amount, setAmount] = useState<string>('')
   const [date, setDate] = useState<string>('')
+  const [notes, setNotes] = useState<string>('')
 
   useEffect(() => {
     setDate(today)
@@ -161,12 +162,14 @@ export default function AddExpensePage() {
         fx_rate: fxRate,
         fx_date: date,
         amount_base_minor: baseMinor,
+        notes: notes.trim() ? notes.trim() : null,
       })
 
       if (error) throw error
 
       toast.success('Expense added')
       setAmount('')
+      setNotes('')
       // Keep the same date/category for fast entry.
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -228,6 +231,16 @@ export default function AddExpensePage() {
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Date</span>
               <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </label>
+
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span className="help">Notes (optional)</span>
+              <input
+                className="input"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g., groceries, Uber, electricity bill"
+              />
             </label>
 
             <button className="btn btnPrimary" disabled={busy} onClick={addExpense}>

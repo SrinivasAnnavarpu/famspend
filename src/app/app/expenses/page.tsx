@@ -39,6 +39,7 @@ export default function ExpensesPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const pageSize = 50
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
@@ -65,6 +66,13 @@ export default function ExpensesPage() {
     [members]
   )
 
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+    }, 350)
+    return () => window.clearTimeout(t)
+  }, [search])
+
   const fetchPage = useCallback(
     async (offset: number) => {
       if (!familyId) return [] as ExpenseRow[]
@@ -83,11 +91,18 @@ export default function ExpensesPage() {
       if (userFilter !== 'all') q.eq('created_by', userFilter)
       if (categoryFilter !== 'all') q.eq('category_id', categoryFilter)
 
+      const s = debouncedSearch
+      if (s) {
+        const cleaned = s.replaceAll('%', '').replaceAll(',', '').replaceAll('(', '').replaceAll(')', '')
+        const pattern = `%${cleaned}%`
+        q.or(`notes.ilike.${pattern},categories.name.ilike.${pattern}`)
+      }
+
       const { data: ex, error: eErr } = await q
       if (eErr) throw eErr
       return (ex ?? []) as ExpenseRow[]
     },
-    [familyId, start, end, userFilter, categoryFilter]
+    [familyId, start, end, userFilter, categoryFilter, debouncedSearch]
   )
 
   const load = useCallback(async () => {
@@ -167,26 +182,9 @@ export default function ExpensesPage() {
     return () => obs.disconnect()
   }, [loadMore, hasMore])
 
-  const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return rows
-
-    return rows.filter((r) => {
-      const cat = r.categories?.name ?? ''
-      const note = r.notes ?? ''
-      const who = memberName(r.created_by)
-      return (
-        cat.toLowerCase().includes(q) ||
-        note.toLowerCase().includes(q) ||
-        who.toLowerCase().includes(q) ||
-        r.expense_date.includes(q)
-      )
-    })
-  }, [rows, search, memberName])
-
   const totalBaseMinor = useMemo(
-    () => filteredRows.reduce((acc, r) => acc + Number(r.amount_base_minor ?? 0), 0),
-    [filteredRows]
+    () => rows.reduce((acc, r) => acc + Number(r.amount_base_minor ?? 0), 0),
+    [rows]
   )
 
   return (
@@ -279,14 +277,14 @@ export default function ExpensesPage() {
                       <td><div className="skeleton" style={{ width: 220 }} /></td>
                     </tr>
                   ))
-                ) : filteredRows.length === 0 ? (
+                ) : rows.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ padding: 18, color: '#64748b' }}>
                       No expenses for this range.
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((r) => (
+                  rows.map((r) => (
                     <tr key={r.id}>
                       <td style={{ whiteSpace: 'nowrap' }}>{r.expense_date}</td>
                       <td>{r.categories?.name ?? '—'}</td>
