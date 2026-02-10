@@ -6,7 +6,15 @@ import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useCurrentFamily } from '@/lib/familyContext'
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({
+  href,
+  label,
+  onNavigate,
+}: {
+  href: string
+  label: string
+  onNavigate?: () => void
+}) {
   const pathname = usePathname()
   const active = pathname === href
 
@@ -15,6 +23,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
       href={href}
       className={active ? 'sideLink sideLinkActive' : 'sideLink'}
       prefetch={false}
+      onClick={() => onNavigate?.()}
     >
       {label}
     </Link>
@@ -83,13 +92,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="appBody">
         <aside className={open ? 'sideNav sideNavOpen' : 'sideNav'}>
           <div className="sideSection">Main</div>
-          <NavLink href="/app/add" label="Add" />
-          <NavLink href="/app/expenses" label="Expenses" />
-          <NavLink href="/app/dashboard" label="Dashboard" />
+          <NavLink href="/app/add" label="Add" onNavigate={() => setOpen(false)} />
+          <NavLink href="/app/expenses" label="Expenses" onNavigate={() => setOpen(false)} />
+          <NavLink href="/app/dashboard" label="Dashboard" onNavigate={() => setOpen(false)} />
 
           <div className="sideSection" style={{ marginTop: 12 }}>Account</div>
-          <NavLink href="/app/account" label="Account" />
-          <NavLink href="/app/account/invite" label="Invite" />
+          <NavLink href="/app/account" label="Account" onNavigate={() => setOpen(false)} />
+          <NavLink href="/app/account/invite" label="Invite" onNavigate={() => setOpen(false)} />
 
           <div className="sideFooter">
             <span className="help">{pathname}</span>

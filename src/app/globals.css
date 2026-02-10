@@ -216,6 +216,14 @@ a {
   background: rgba(15, 23, 42, 0.10);
 }
 
+/* Backdrop (default hidden/positioned so it never affects layout) */
+.sideBackdrop {
+  position: fixed;
+  inset: 64px 0 0 0;
+  background: rgba(2, 6, 23, 0.25);
+  z-index: 9997;
+}
+
 /* Mobile: sidebar becomes overlay */
 @media (max-width: 860px) {
   .appBody {
@@ -233,13 +241,6 @@ a {
 
   .sideNavOpen {
     left: 0;
-  }
-
-  .sideBackdrop {
-    position: fixed;
-    inset: 64px 0 0 0;
-    background: rgba(2, 6, 23, 0.25);
-    z-index: 9997;
   }
 
   .appMain {
