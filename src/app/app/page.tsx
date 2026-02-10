@@ -108,7 +108,7 @@ export default function AppHome() {
       // 1) create family
       const { data: fam, error: famErr } = await supabase
         .from('families')
-        .insert({ name, base_currency: 'USD', created_by: userId })
+        .insert({ name, base_currency: 'USD' })
         .select('id, name, base_currency, created_by')
         .single()
 
