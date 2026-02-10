@@ -9,6 +9,14 @@ import { getFxRate } from '@/lib/fx'
 import { toMinorUnits } from '@/lib/money'
 import { supabase } from '@/lib/supabaseClient'
 
+function errMsg(e: unknown) {
+  if (e instanceof Error) return e.message
+  if (e && typeof e === 'object' && 'message' in e) {
+    return String((e as { message: unknown }).message)
+  }
+  return String(e)
+}
+
 type Category = { id: string; name: string }
 
 type ExpenseRow = {
@@ -119,7 +127,22 @@ export default function ExpensesPage() {
       if (s) {
         const cleaned = s.replaceAll('%', '').replaceAll(',', '').replaceAll('(', '').replaceAll(')', '')
         const pattern = `%${cleaned}%`
-        q.or(`notes.ilike.${pattern},categories.name.ilike.${pattern}`)
+
+        const { data: cats, error: cErr } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('family_id', familyId)
+          .ilike('name', pattern)
+          .limit(50)
+
+        if (cErr) throw cErr
+
+        const ids = (cats ?? []).map((c: { id: string }) => c.id)
+        if (ids.length > 0) {
+          q.or(`notes.ilike.${pattern},category_id.in.(${ids.join(',')})`)
+        } else {
+          q.ilike('notes', pattern)
+        }
       }
 
       const { data: ex, error: eErr } = await q
@@ -148,7 +171,7 @@ export default function ExpensesPage() {
       setRows(first)
       setHasMore(first.length === pageSize)
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
+      const msg = errMsg(e)
       toast.error(msg, 'Failed to load expenses')
     } finally {
       setBusy(false)
@@ -165,8 +188,9 @@ export default function ExpensesPage() {
       setRows((prev) => [...prev, ...next])
       setHasMore(next.length === pageSize)
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
+      const msg = errMsg(e)
       toast.error(msg, 'Failed to load more')
+      setHasMore(false)
     } finally {
       setLoadingMore(false)
     }
@@ -263,7 +287,7 @@ export default function ExpensesPage() {
       closeEdit()
       await load()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
+      const msg = errMsg(e)
       toast.error(msg, 'Update failed')
     } finally {
       setSaving(false)
@@ -282,7 +306,7 @@ export default function ExpensesPage() {
         toast.success('Deleted')
         await load()
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e)
+        const msg = errMsg(e)
         toast.error(msg, 'Delete failed')
       } finally {
         setDeletingId(null)
