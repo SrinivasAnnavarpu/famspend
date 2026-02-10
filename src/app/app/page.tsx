@@ -27,6 +27,8 @@ export default function AppHome() {
   const toast = useToast()
   const [error, setError] = useState<string | null>(null)
   const [familyName, setFamilyName] = useState('My Family')
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [inviteBusy, setInviteBusy] = useState(false)
 
   const authed = useMemo(() => Boolean(userId), [userId])
 
@@ -99,6 +101,24 @@ export default function AppHome() {
     router.replace('/login')
   }
 
+  async function createInvite() {
+    if (!family) return
+    setInviteBusy(true)
+    try {
+      const { data: token, error } = await supabase.rpc('create_invite', { p_family_id: family.id })
+      if (error) throw error
+      const url = `${window.location.origin}/invite/${token}`
+      setInviteLink(url)
+      await navigator.clipboard.writeText(url)
+      toast.success('Invite link copied')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast.error(msg, 'Invite failed')
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
   async function createFamily() {
     if (!userId) return
     const name = familyName.trim() || 'My Family'
@@ -155,10 +175,31 @@ export default function AppHome() {
           <p style={{ color: '#334155', marginTop: 8 }}>
             <b>{family.name}</b> (base currency: {family.base_currency})
           </p>
+
           <div className="row" style={{ marginTop: 12 }}>
             <button className="btn btnPrimary" onClick={() => router.push('/app/add')}>Add expense</button>
             <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
             <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
+          </div>
+
+          <div className="card" style={{ marginTop: 14 }}>
+            <div className="cardBody">
+              <div className="h2">Invite</div>
+              <p className="p" style={{ marginTop: 6 }}>Generate a single-use invite link (expires in 7 days).</p>
+              <div className="row" style={{ marginTop: 10, alignItems: 'center' }}>
+                <button className="btn" disabled={inviteBusy} onClick={() => void createInvite()}>
+                  {inviteBusy ? 'Generating…' : 'Create invite link'}
+                </button>
+                {inviteLink ? (
+                  <div className="badge" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {inviteLink}
+                  </div>
+                ) : null}
+              </div>
+              <p className="help" style={{ marginTop: 8 }}>
+                Tip: open the link on the other phone. They’ll be asked to sign in, then joined to your family.
+              </p>
+            </div>
           </div>
         </>
       ) : (

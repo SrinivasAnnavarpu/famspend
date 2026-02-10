@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -13,9 +15,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace('/app')
+      if (data.session) router.replace(nextPath ?? '/app')
     })
-  }, [router])
+  }, [router, nextPath])
 
   async function signUp() {
     setBusy(true)
@@ -38,7 +40,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      router.replace('/app')
+      router.replace(nextPath ?? '/app')
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
