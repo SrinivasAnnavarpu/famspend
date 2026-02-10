@@ -155,9 +155,10 @@ export default function AppHome() {
           <p style={{ color: '#334155', marginTop: 8 }}>
             <b>{family.name}</b> (base currency: {family.base_currency})
           </p>
-          <p style={{ color: '#64748b', marginTop: 8 }}>
-            Next: Add Expense screen.
-          </p>
+          <div className="row" style={{ marginTop: 12 }}>
+            <button className="btn btnPrimary" onClick={() => router.push('/app/add')}>Add expense</button>
+            <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
+          </div>
         </>
       ) : (
         <>
