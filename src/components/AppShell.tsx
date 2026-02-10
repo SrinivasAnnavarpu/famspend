@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -35,8 +35,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { profile } = useCurrentFamily()
 
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+
+  // Mobile: drawer closed by default. Desktop: sidebar open by default.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 860px)')
+
+    function sync() {
+      setOpen(!mq.matches)
+    }
+
+    sync()
+    mq.addEventListener?.('change', sync)
+    return () => mq.removeEventListener?.('change', sync)
+  }, [])
 
   const who = useMemo(() => {
     const name = profile?.display_name?.trim()
