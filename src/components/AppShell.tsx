@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useCurrentFamily } from '@/lib/familyContext'
+import { MobileTabBar } from '@/components/MobileTabBar'
 
 function NavLink({
   href,
@@ -121,6 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {open ? <div className="sideBackdrop" onClick={() => setOpen(false)} /> : null}
 
         <main className="appMain">{children}</main>
+        <MobileTabBar />
       </div>
     </div>
   )

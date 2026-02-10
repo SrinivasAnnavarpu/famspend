@@ -154,6 +154,13 @@ a {
   padding: 24px calc(24px + env(safe-area-inset-right)) 24px calc(24px + env(safe-area-inset-left));
 }
 
+/* Reserve space for mobile bottom tabs */
+@media (max-width: 520px) {
+  .appMain {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+}
+
 .filtersGrid {
   display: grid;
   grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr 1fr;
@@ -216,6 +223,37 @@ a {
   .table tbody td {
     padding: 10px 10px;
     font-size: 13px;
+  }
+
+  /* Mobile bottom tabs */
+  .tabBar {
+    position: sticky;
+    bottom: 0;
+    z-index: 9997;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
+    border-top: 1px solid rgba(15, 23, 42, 0.10);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+  }
+
+  .tabItem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    background: rgba(255, 255, 255, 0.70);
+    font-weight: 800;
+  }
+
+  .tabItemActive {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.18);
+    color: #1d4ed8;
   }
 }
 
