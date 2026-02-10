@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ToastProvider'
 import { useCurrentFamily } from '@/lib/familyContext'
@@ -36,6 +36,11 @@ export default function ExpensesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [rows, setRows] = useState<ExpenseRow[]>([])
   const [busy, setBusy] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [search, setSearch] = useState('')
+  const pageSize = 50
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const monthRange = useMemo(() => {
     const d = new Date()
@@ -60,9 +65,35 @@ export default function ExpensesPage() {
     [members]
   )
 
+  const fetchPage = useCallback(
+    async (offset: number) => {
+      if (!familyId) return [] as ExpenseRow[]
+
+      const q = supabase
+        .from('expenses')
+        .select(
+          'id, created_by, expense_date, amount_original_minor, currency_original, amount_base_minor, currency_base, fx_rate, fx_date, notes, categories(id, name)'
+        )
+        .eq('family_id', familyId)
+        .gte('expense_date', start)
+        .lte('expense_date', end)
+        .order('expense_date', { ascending: false })
+        .range(offset, offset + pageSize - 1)
+
+      if (userFilter !== 'all') q.eq('created_by', userFilter)
+      if (categoryFilter !== 'all') q.eq('category_id', categoryFilter)
+
+      const { data: ex, error: eErr } = await q
+      if (eErr) throw eErr
+      return (ex ?? []) as ExpenseRow[]
+    },
+    [familyId, start, end, userFilter, categoryFilter]
+  )
+
   const load = useCallback(async () => {
     if (!familyId) return
     setBusy(true)
+    setHasMore(true)
     try {
       const { data: cats, error: cErr } = await supabase
         .from('categories')
@@ -74,30 +105,33 @@ export default function ExpensesPage() {
       if (cErr) throw cErr
       setCategories((cats ?? []) as Category[])
 
-      const q = supabase
-        .from('expenses')
-        .select(
-          'id, created_by, expense_date, amount_original_minor, currency_original, amount_base_minor, currency_base, fx_rate, fx_date, notes, categories(id, name)'
-        )
-        .eq('family_id', familyId)
-        .gte('expense_date', start)
-        .lte('expense_date', end)
-        .order('expense_date', { ascending: false })
-        .limit(200)
-
-      if (userFilter !== 'all') q.eq('created_by', userFilter)
-      if (categoryFilter !== 'all') q.eq('category_id', categoryFilter)
-
-      const { data: ex, error: eErr } = await q
-      if (eErr) throw eErr
-      setRows((ex ?? []) as ExpenseRow[])
+      const first = await fetchPage(0)
+      setRows(first)
+      setHasMore(first.length === pageSize)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       toast.error(msg, 'Failed to load expenses')
     } finally {
       setBusy(false)
     }
-  }, [familyId, start, end, userFilter, categoryFilter, toast])
+  }, [familyId, fetchPage, toast])
+
+  const loadMore = useCallback(async () => {
+    if (!familyId) return
+    if (busy || loadingMore || !hasMore) return
+
+    setLoadingMore(true)
+    try {
+      const next = await fetchPage(rows.length)
+      setRows((prev) => [...prev, ...next])
+      setHasMore(next.length === pageSize)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast.error(msg, 'Failed to load more')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [familyId, busy, loadingMore, hasMore, fetchPage, rows.length, toast])
 
   useEffect(() => {
     if (!familyId && !loading) router.replace('/app')
@@ -107,11 +141,52 @@ export default function ExpensesPage() {
     void load()
   }, [load])
 
-  useExpensesRealtime({ familyId, onChange: load })
+  useExpensesRealtime({
+    familyId,
+    onChange: () => {
+      // reset list on realtime change (simple + consistent)
+      void load()
+    },
+  })
+
+  useEffect(() => {
+    if (!loadMoreRef.current) return
+    if (!hasMore) return
+
+    const el = loadMoreRef.current
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          void loadMore()
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    )
+
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [loadMore, hasMore])
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+
+    return rows.filter((r) => {
+      const cat = r.categories?.name ?? ''
+      const note = r.notes ?? ''
+      const who = memberName(r.created_by)
+      return (
+        cat.toLowerCase().includes(q) ||
+        note.toLowerCase().includes(q) ||
+        who.toLowerCase().includes(q) ||
+        r.expense_date.includes(q)
+      )
+    })
+  }, [rows, search, memberName])
 
   const totalBaseMinor = useMemo(
-    () => rows.reduce((acc, r) => acc + Number(r.amount_base_minor ?? 0), 0),
-    [rows]
+    () => filteredRows.reduce((acc, r) => acc + Number(r.amount_base_minor ?? 0), 0),
+    [filteredRows]
   )
 
   return (
@@ -133,6 +208,15 @@ export default function ExpensesPage() {
       </div>
 
       <div className="row" style={{ alignItems: 'flex-end' }}>
+        <div style={{ minWidth: 260, flex: '1 1 260px' }}>
+          <div className="help">Search</div>
+          <input
+            className="input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search notes, category, user…"
+          />
+        </div>
         <div style={{ minWidth: 200 }}>
           <div className="help">From</div>
           <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
@@ -195,14 +279,14 @@ export default function ExpensesPage() {
                       <td><div className="skeleton" style={{ width: 220 }} /></td>
                     </tr>
                   ))
-                ) : rows.length === 0 ? (
+                ) : filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ padding: 18, color: '#64748b' }}>
                       No expenses for this range.
                     </td>
                   </tr>
                 ) : (
-                  rows.map((r) => (
+                  filteredRows.map((r) => (
                     <tr key={r.id}>
                       <td style={{ whiteSpace: 'nowrap' }}>{r.expense_date}</td>
                       <td>{r.categories?.name ?? '—'}</td>
@@ -225,8 +309,10 @@ export default function ExpensesPage() {
         </div>
       </div>
 
+      <div ref={loadMoreRef} style={{ height: 1 }} />
+
       <p className="help" style={{ marginTop: 10 }}>
-        Realtime is enabled — this table updates when a family member adds expenses.
+        {loadingMore ? 'Loading more…' : hasMore ? 'Scroll to load more.' : 'End of list.'} Realtime is enabled.
       </p>
     </div>
   )
