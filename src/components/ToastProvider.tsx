@@ -50,7 +50,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         style={{
           position: 'fixed',
-          top: 16,
+          bottom: 16,
           right: 16,
           display: 'grid',
           gap: 10,
