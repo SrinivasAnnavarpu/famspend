@@ -105,30 +105,14 @@ export default function AppHome() {
     setBusy(true)
     setError(null)
     try {
-      // 1) create family
-      const { data: fam, error: famErr } = await supabase
-        .from('families')
-        .insert({ name, base_currency: 'USD' })
-        .select('id, name, base_currency, created_by')
-        .single()
+      const { data: familyId, error: rpcErr } = await supabase.rpc('create_family', {
+        p_name: name,
+      })
 
-      if (famErr) throw famErr
+      if (rpcErr) throw rpcErr
+      if (!familyId) throw new Error('Failed to create family')
 
-      // 2) add creator as owner
-      const { error: memErr } = await supabase
-        .from('family_members')
-        .insert({ family_id: fam.id, user_id: userId, role: 'owner' })
-
-      if (memErr) throw memErr
-
-      // 3) seed categories
-      const seed = ['Food', 'Rent', 'Utilities', 'Travel', 'Shopping', 'Health', 'Other']
-      const { error: catErr } = await supabase.from('categories').insert(
-        seed.map((name, idx) => ({ family_id: fam.id, name, sort_order: idx }))
-      )
-
-      if (catErr) throw catErr
-
+      toast.success('Family created', name)
       await load()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
