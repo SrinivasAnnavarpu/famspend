@@ -26,6 +26,7 @@ export default function AppHome() {
   const [membership, setMembership] = useState<Membership | null>(null)
   const toast = useToast()
   const [error, setError] = useState<string | null>(null)
+  const [familyName, setFamilyName] = useState('My Family')
 
   const authed = useMemo(() => Boolean(userId), [userId])
 
@@ -100,13 +101,14 @@ export default function AppHome() {
 
   async function createFamily() {
     if (!userId) return
+    const name = familyName.trim() || 'My Family'
     setBusy(true)
     setError(null)
     try {
       // 1) create family
       const { data: fam, error: famErr } = await supabase
         .from('families')
-        .insert({ name: 'My Family', base_currency: 'USD', created_by: userId })
+        .insert({ name, base_currency: 'USD', created_by: userId })
         .select('id, name, base_currency, created_by')
         .single()
 
@@ -179,12 +181,29 @@ export default function AppHome() {
           <p style={{ color: '#64748b', marginTop: 8 }}>
             You’re not in a family yet. Create one to start tracking expenses.
           </p>
+
+          <div style={{ marginTop: 14, maxWidth: 420 }}>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span className="help">Family name</span>
+              <input
+                className="input"
+                value={familyName}
+                onChange={(e) => setFamilyName(e.target.value)}
+                placeholder="My Family"
+              />
+            </label>
+            <p className="help" style={{ marginTop: 8 }}>
+              You can rename this later in Settings.
+            </p>
+          </div>
+
           <button
+            className="btn btnPrimary"
             disabled={busy}
             onClick={createFamily}
-            style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, border: '1px solid #0f172a', background: '#0f172a', color: 'white', fontWeight: 800 }}
+            style={{ marginTop: 12 }}
           >
-            {busy ? 'Creating…' : 'Create My Family'}
+            {busy ? 'Creating…' : 'Create family'}
           </button>
           {membership ? (
             <p style={{ color: '#64748b', marginTop: 10 }}>
