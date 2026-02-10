@@ -158,6 +158,7 @@ export default function AppHome() {
           <div className="row" style={{ marginTop: 12 }}>
             <button className="btn btnPrimary" onClick={() => router.push('/app/add')}>Add expense</button>
             <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
+            <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
           </div>
         </>
       ) : (

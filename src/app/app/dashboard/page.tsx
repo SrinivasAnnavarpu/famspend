@@ -155,6 +155,7 @@ export default function DashboardPage() {
         </div>
         <div className="row">
           <button className="btn btnPrimary" onClick={() => router.push('/app/add')}>Add expense</button>
+          <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
           <button className="btn" onClick={exportCsv}>Export CSV</button>
         </div>
       </div>

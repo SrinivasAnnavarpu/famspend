@@ -190,6 +190,7 @@ export default function AddExpensePage() {
         </div>
         <div className="row">
           <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
+          <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
           <button className="btn btnGhost" onClick={() => router.push('/app')}>Settings</button>
         </div>
       </div>
