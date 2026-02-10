@@ -254,6 +254,51 @@ a {
   animation: shimmer 1.0s linear infinite;
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px;
+  z-index: 9998;
+}
+
+.modal {
+  width: 720px;
+  max-width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.modalHeader {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalBody {
+  padding: 18px;
+}
+
+.kbd {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+@media (min-width: 768px) {
+  .modalBackdrop {
+    align-items: center;
+  }
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 16px;

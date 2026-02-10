@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ToastProvider'
 import { useCurrentFamily } from '@/lib/familyContext'
 import { useExpensesRealtime } from '@/lib/expensesRealtime'
+import { getFxRate } from '@/lib/fx'
+import { toMinorUnits } from '@/lib/money'
 import { supabase } from '@/lib/supabaseClient'
 
 type Category = { id: string; name: string }
@@ -23,15 +25,28 @@ type ExpenseRow = {
   categories: { id: string; name: string } | null
 }
 
+type EditState = {
+  id: string
+  category_id: string | null
+  expense_date: string
+  amount: string
+  currency_original: string
+  notes: string
+}
+
 function fmtMoney(minor: number, currency: string) {
   const n = (Number(minor) || 0) / 100
   return `${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
 }
 
+function toMajor(minor: number) {
+  return ((Number(minor) || 0) / 100).toFixed(2)
+}
+
 export default function ExpensesPage() {
   const router = useRouter()
   const toast = useToast()
-  const { loading, familyId, family, members } = useCurrentFamily()
+  const { loading, familyId, family, members, profile } = useCurrentFamily()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [rows, setRows] = useState<ExpenseRow[]>([])
@@ -42,6 +57,15 @@ export default function ExpensesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const pageSize = 50
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+
+  const [edit, setEdit] = useState<EditState | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const currencyChoices = useMemo(
+    () => ['USD', 'INR', 'EUR', 'GBP', 'CAD', 'AUD', 'SGD', 'JPY'],
+    []
+  )
 
   const monthRange = useMemo(() => {
     const d = new Date()
@@ -187,6 +211,86 @@ export default function ExpensesPage() {
     [rows]
   )
 
+  const openEdit = useCallback(
+    (r: ExpenseRow) => {
+      setEdit({
+        id: r.id,
+        category_id: r.categories?.id ?? null,
+        expense_date: r.expense_date,
+        amount: toMajor(r.amount_original_minor),
+        currency_original: r.currency_original,
+        notes: r.notes ?? '',
+      })
+    },
+    []
+  )
+
+  const closeEdit = useCallback(() => setEdit(null), [])
+
+  const saveEdit = useCallback(async () => {
+    if (!familyId || !family) return
+    if (!edit) return
+
+    setSaving(true)
+    try {
+      const originalMinor = toMinorUnits(edit.amount)
+      const baseCurrency = family.base_currency
+      const fromCurrency = edit.currency_original
+      const date = edit.expense_date
+
+      const fxRate = await getFxRate({ from: fromCurrency, to: baseCurrency, date })
+      const baseMinor = Math.round(originalMinor * fxRate)
+
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          category_id: edit.category_id,
+          expense_date: edit.expense_date,
+          amount_original_minor: originalMinor,
+          currency_original: fromCurrency,
+          fx_rate: fxRate,
+          fx_date: date,
+          amount_base_minor: baseMinor,
+          currency_base: baseCurrency,
+          notes: edit.notes.trim() ? edit.notes.trim() : null,
+        })
+        .eq('id', edit.id)
+        .eq('family_id', familyId)
+
+      if (error) throw error
+
+      toast.success('Expense updated')
+      closeEdit()
+      await load()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast.error(msg, 'Update failed')
+    } finally {
+      setSaving(false)
+    }
+  }, [familyId, family, edit, toast, closeEdit, load])
+
+  const deleteExpense = useCallback(
+    async (id: string) => {
+      if (!familyId) return
+      if (!confirm('Delete this expense?')) return
+
+      setDeletingId(id)
+      try {
+        const { error } = await supabase.from('expenses').delete().eq('id', id).eq('family_id', familyId)
+        if (error) throw error
+        toast.success('Deleted')
+        await load()
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
+        toast.error(msg, 'Delete failed')
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    [familyId, toast, load]
+  )
+
   return (
     <div className="container">
       <div className="header">
@@ -263,6 +367,7 @@ export default function ExpensesPage() {
                   <th style={{ textAlign: 'right' }}>Amount</th>
                   <th style={{ textAlign: 'right' }}>Base</th>
                   <th>Notes</th>
+                  <th style={{ width: 140 }} />
                 </tr>
               </thead>
               <tbody>
@@ -275,11 +380,12 @@ export default function ExpensesPage() {
                       <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
                       <td style={{ textAlign: 'right' }}><div className="skeleton" style={{ width: 130, marginLeft: 'auto' }} /></td>
                       <td><div className="skeleton" style={{ width: 220 }} /></td>
+                      <td><div className="skeleton" style={{ width: 90, marginLeft: 'auto' }} /></td>
                     </tr>
                   ))
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: 18, color: '#64748b' }}>
+                    <td colSpan={7} style={{ padding: 18, color: '#64748b' }}>
                       No expenses for this range.
                     </td>
                   </tr>
@@ -298,6 +404,19 @@ export default function ExpensesPage() {
                       <td style={{ maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {r.notes ?? ''}
                       </td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button className="btn" style={{ padding: '6px 10px', borderRadius: 10 }} onClick={() => openEdit(r)}>
+                          Edit
+                        </button>
+                        <button
+                          className="btn"
+                          style={{ padding: '6px 10px', borderRadius: 10, marginLeft: 8 }}
+                          disabled={deletingId === r.id}
+                          onClick={() => void deleteExpense(r.id)}
+                        >
+                          {deletingId === r.id ? '…' : 'Delete'}
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -312,6 +431,99 @@ export default function ExpensesPage() {
       <p className="help" style={{ marginTop: 10 }}>
         {loadingMore ? 'Loading more…' : hasMore ? 'Scroll to load more.' : 'End of list.'} Realtime is enabled.
       </p>
+
+      {edit ? (
+        <div className="modalBackdrop" role="dialog" aria-modal="true" onClick={closeEdit}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <div>
+                <div style={{ fontWeight: 850, letterSpacing: -0.2 }}>Edit expense</div>
+                <div className="help">Changes will recalculate FX for the expense date.</div>
+              </div>
+              <button className="btn btnGhost" onClick={closeEdit}>
+                Close
+              </button>
+            </div>
+            <div className="modalBody">
+              <div className="row" style={{ alignItems: 'flex-end' }}>
+                <div style={{ flex: '1 1 220px' }}>
+                  <div className="help">Category</div>
+                  <select
+                    className="input"
+                    value={edit.category_id ?? ''}
+                    onChange={(e) => setEdit((p) => (p ? { ...p, category_id: e.target.value || null } : p))}
+                  >
+                    <option value="">—</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: '1 1 160px' }}>
+                  <div className="help">Date</div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={edit.expense_date}
+                    onChange={(e) => setEdit((p) => (p ? { ...p, expense_date: e.target.value } : p))}
+                  />
+                </div>
+              </div>
+
+              <div className="row" style={{ marginTop: 12, alignItems: 'flex-end' }}>
+                <div style={{ flex: '1 1 220px' }}>
+                  <div className="help">Amount</div>
+                  <input
+                    className="input"
+                    inputMode="decimal"
+                    value={edit.amount}
+                    onChange={(e) => setEdit((p) => (p ? { ...p, amount: e.target.value } : p))}
+                  />
+                </div>
+                <div style={{ flex: '1 1 220px' }}>
+                  <div className="help">Currency</div>
+                  <input
+                    className="input"
+                    list="currency-list"
+                    value={edit.currency_original}
+                    onChange={(e) => setEdit((p) => (p ? { ...p, currency_original: e.target.value.toUpperCase() } : p))}
+                    placeholder={profile?.default_currency ?? 'USD'}
+                  />
+                  <datalist id="currency-list">
+                    {currencyChoices.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                  <div className="help" style={{ marginTop: 6 }}>
+                    Tip: you can type any 3-letter currency code.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div className="help">Notes</div>
+                <input
+                  className="input"
+                  value={edit.notes}
+                  onChange={(e) => setEdit((p) => (p ? { ...p, notes: e.target.value } : p))}
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div className="row" style={{ marginTop: 14 }}>
+                <button className="btn btnPrimary" disabled={saving} onClick={() => void saveEdit()}>
+                  {saving ? 'Saving…' : 'Save changes'}
+                </button>
+                <button className="btn" onClick={closeEdit}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
