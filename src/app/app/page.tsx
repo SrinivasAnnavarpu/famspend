@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ToastProvider'
 import { supabase } from '@/lib/supabaseClient'
 
 type Family = {
@@ -23,6 +24,7 @@ export default function AppHome() {
   const [userId, setUserId] = useState<string | null>(null)
   const [family, setFamily] = useState<Family | null>(null)
   const [membership, setMembership] = useState<Membership | null>(null)
+  const toast = useToast()
   const [error, setError] = useState<string | null>(null)
 
   const authed = useMemo(() => Boolean(userId), [userId])
@@ -129,6 +131,7 @@ export default function AppHome() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
+      toast.error(msg, 'Create family failed')
     } finally {
       setBusy(false)
     }
