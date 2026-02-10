@@ -119,9 +119,13 @@ export function useToast() {
   const ctx = useContext(ToastContext)
   if (!ctx) throw new Error('useToast must be used within ToastProvider')
 
-  return {
-    error: (message: string, title = 'Error') => ctx.push({ type: 'error', title, message }),
-    success: (message: string, title = 'Success') => ctx.push({ type: 'success', title, message }),
-    info: (message: string, title = 'Info') => ctx.push({ type: 'info', title, message }),
-  }
+  // Return stable callbacks so callers can safely include `toast` in dependency arrays.
+  return useMemo(
+    () => ({
+      error: (message: string, title = 'Error') => ctx.push({ type: 'error', title, message }),
+      success: (message: string, title = 'Success') => ctx.push({ type: 'success', title, message }),
+      info: (message: string, title = 'Info') => ctx.push({ type: 'info', title, message }),
+    }),
+    [ctx]
+  )
 }
