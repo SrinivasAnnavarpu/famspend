@@ -186,16 +186,14 @@ a {
     grid-template-columns: 1fr;
   }
 
-  /* Mobile: filters scroll horizontally */
+  /* Mobile: filters stack and fit width */
   .filtersGrid {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px;
   }
   .filtersGrid > div {
-    min-width: 220px;
+    min-width: 0;
   }
 
   .appMain {
@@ -341,6 +339,8 @@ a {
 @media (max-width: 860px) {
   .appBody {
     grid-template-columns: 1fr;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
   .appBodyClosed {
     grid-template-columns: 1fr;
