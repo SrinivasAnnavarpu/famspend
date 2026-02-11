@@ -50,13 +50,18 @@ export default function SettingsPage() {
     if (!userId) return
     setSavingProfile(true)
     try {
+      // Only owner can change profile settings other than their own display name.
+      const patch: Record<string, unknown> = {
+        display_name: displayName.trim() ? displayName.trim() : null,
+      }
+      if (isOwner) {
+        patch.default_currency = defaultCurrency.toUpperCase()
+        patch.timezone = timezone.trim() || 'UTC'
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          display_name: displayName.trim() ? displayName.trim() : null,
-          default_currency: defaultCurrency.toUpperCase(),
-          timezone: timezone.trim() || 'UTC',
-        })
+        .update(patch)
         .eq('user_id', userId)
 
       if (error) throw error
@@ -114,7 +119,11 @@ export default function SettingsPage() {
         <div className="card" style={{ flex: '1 1 360px' }}>
           <div className="cardBody" style={{ padding: 22 }}>
             <div className="h2">Profile</div>
-            <p className="help" style={{ marginTop: 6 }}>These settings affect your default currency and how your name appears in expenses.</p>
+            <p className="help" style={{ marginTop: 6 }}>
+              {isOwner
+                ? 'These settings affect your default currency and how your name appears in expenses.'
+                : 'You can update your display name. Other profile settings are managed by the family owner.'}
+            </p>
 
             <div style={{ marginTop: 14, display: 'grid', gap: 12 }}>
               <label style={{ display: 'grid', gap: 6 }}>
@@ -124,7 +133,12 @@ export default function SettingsPage() {
 
               <label style={{ display: 'grid', gap: 6 }}>
                 <span className="help">Default currency</span>
-                <select className="input" value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)}>
+                <select
+                  className="input"
+                  value={defaultCurrency}
+                  disabled={!isOwner}
+                  onChange={(e) => setDefaultCurrency(e.target.value)}
+                >
                   {currencyChoices.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -133,13 +147,19 @@ export default function SettingsPage() {
 
               <label style={{ display: 'grid', gap: 6 }}>
                 <span className="help">Timezone</span>
-                <input className="input" value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="America/Chicago" />
+                <input
+                  className="input"
+                  value={timezone}
+                  disabled={!isOwner}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  placeholder="America/Chicago"
+                />
                 <span className="help">Used for date context; you can paste something like America/Chicago.</span>
               </label>
 
               <div className="row" style={{ marginTop: 4 }}>
                 <button className="btn btnPrimary" disabled={savingProfile} onClick={() => void saveProfile()}>
-                  {savingProfile ? 'Saving…' : 'Save profile'}
+                  {savingProfile ? 'Saving…' : isOwner ? 'Save profile' : 'Save display name'}
                 </button>
               </div>
             </div>
@@ -150,18 +170,29 @@ export default function SettingsPage() {
           <div className="cardBody" style={{ padding: 22 }}>
             <div className="h2">Family</div>
             <p className="help" style={{ marginTop: 6 }}>
-              {isOwner ? 'Only you (owner) can change these.' : 'Only the family owner can change these.'}
+              {isOwner ? 'Only you (owner) can change these.' : 'View only. Only the family owner can change these.'}
             </p>
 
             <div style={{ marginTop: 14, display: 'grid', gap: 12 }}>
               <label style={{ display: 'grid', gap: 6 }}>
                 <span className="help">Family name</span>
-                <input className="input" value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder="My Family" />
+                <input
+                  className="input"
+                  value={familyName}
+                  disabled={!isOwner}
+                  onChange={(e) => setFamilyName(e.target.value)}
+                  placeholder="My Family"
+                />
               </label>
 
               <label style={{ display: 'grid', gap: 6 }}>
                 <span className="help">Base currency</span>
-                <select className="input" value={baseCurrency} onChange={(e) => setBaseCurrency(e.target.value)}>
+                <select
+                  className="input"
+                  value={baseCurrency}
+                  disabled={!isOwner}
+                  onChange={(e) => setBaseCurrency(e.target.value)}
+                >
                   {currencyChoices.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
