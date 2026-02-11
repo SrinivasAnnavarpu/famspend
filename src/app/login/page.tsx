@@ -119,9 +119,18 @@ function LoginInner() {
               Continue with Google
             </button>
 
-            <p className="help" style={{ marginTop: 8 }}>
-              Tip: Each person should sign in with their own account, then join the family via an invite link.
-            </p>
+            <div className="row" style={{ marginTop: 8, justifyContent: 'space-between' }}>
+              <button
+                className="btn btnGhost"
+                disabled={busy}
+                onClick={() => router.push(nextPath ? `/forgot?next=${encodeURIComponent(nextPath)}` : '/forgot')}
+              >
+                Forgot password?
+              </button>
+              <span className="help" style={{ alignSelf: 'center' }}>
+                Tip: Each person should sign in with their own account.
+              </span>
+            </div>
           </div>
         </div>
       </div>

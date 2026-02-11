@@ -13,6 +13,7 @@ export default function SettingsPage() {
 
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingFamily, setSavingFamily] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const [displayName, setDisplayName] = useState('')
   const [defaultCurrency, setDefaultCurrency] = useState('USD')
@@ -100,6 +101,42 @@ export default function SettingsPage() {
       toast.error(msg, 'Save failed')
     } finally {
       setSavingFamily(false)
+    }
+  }
+
+  async function removeMember(memberUserId: string) {
+    if (!familyId) return
+    if (!isOwner) return
+    if (memberUserId === userId) {
+      toast.error('You cannot remove yourself')
+      return
+    }
+
+    const target = members.find((m) => m.user_id === memberUserId)
+    if (!target) return
+    if (target.role === 'owner') {
+      toast.error('Cannot remove the owner')
+      return
+    }
+
+    if (!confirm(`Remove ${target.display_name ?? 'member'} from the family?`)) return
+
+    setRemovingId(memberUserId)
+    try {
+      const { error } = await supabase
+        .from('family_members')
+        .delete()
+        .eq('family_id', familyId)
+        .eq('user_id', memberUserId)
+
+      if (error) throw error
+      toast.success('Member removed')
+      await refresh()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast.error(msg, 'Remove failed')
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -206,6 +243,39 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="cardBody" style={{ padding: 18 }}>
+          <div className="help" style={{ fontWeight: 800 }}>Family members</div>
+          <div className="help" style={{ marginTop: 6 }}>
+            {isOwner ? 'As owner, you can remove members.' : 'Only the owner can remove members.'}
+          </div>
+
+          <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
+            {members.map((m) => (
+              <div key={m.user_id} className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {m.display_name ?? m.user_id}
+                    {m.user_id === userId ? ' (you)' : ''}
+                  </div>
+                  <div className="help">Role: {m.role}</div>
+                </div>
+
+                {isOwner && m.role !== 'owner' ? (
+                  <button
+                    className="btn"
+                    disabled={removingId === m.user_id}
+                    onClick={() => void removeMember(m.user_id)}
+                  >
+                    {removingId === m.user_id ? 'Removing…' : 'Remove'}
+                  </button>
+                ) : null}
+              </div>
+            ))}
           </div>
         </div>
       </div>
