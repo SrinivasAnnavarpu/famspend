@@ -335,13 +335,10 @@ export default function ExpensesPage() {
   return (
     <div className="container">
       <div className="header">
-        <div className="brand">
-          <div className="logo" aria-hidden />
-          <div>
-            <div className="brandTitle">Expenses</div>
-            <div className="help">
-              {family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}
-            </div>
+        <div>
+          <div className="brandTitle">Expenses</div>
+          <div className="help">
+            {family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}
           </div>
         </div>
         <AppNav />
