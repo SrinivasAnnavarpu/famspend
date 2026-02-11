@@ -78,6 +78,8 @@ export default function ExpensesPage() {
   const [edit, setEdit] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isMobile, setIsMobile] = useState(false)
 
   const currencyChoices = useMemo(
@@ -180,6 +182,7 @@ export default function ExpensesPage() {
 
       const first = await fetchPage(0)
       setRows(first)
+      setSelectedIds(new Set())
       setHasMore(first.length === pageSize)
     } catch (e: unknown) {
       const msg = errMsg(e)
@@ -330,6 +333,11 @@ export default function ExpensesPage() {
         const { error } = await supabase.from('expenses').delete().eq('id', id).eq('family_id', familyId)
         if (error) throw error
         toast.success('Deleted')
+        setSelectedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
         closeEdit()
         await load()
       } catch (e: unknown) {
@@ -339,8 +347,60 @@ export default function ExpensesPage() {
         setDeletingId(null)
       }
     },
-    [familyId, toast, load]
+    [familyId, toast, load, closeEdit]
   )
+
+  const allLoadedSelected = useMemo(() => {
+    if (rows.length === 0) return false
+    return rows.every((r) => selectedIds.has(r.id))
+  }, [rows, selectedIds])
+
+  const selectedCount = selectedIds.size
+
+  const toggleSelectAllLoaded = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (rows.every((r) => next.has(r.id))) {
+        // unselect all loaded
+        for (const r of rows) next.delete(r.id)
+      } else {
+        // select all loaded
+        for (const r of rows) next.add(r.id)
+      }
+      return next
+    })
+  }, [rows])
+
+  const toggleSelectOne = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const deleteSelected = useCallback(async () => {
+    if (!familyId) return
+    if (selectedIds.size === 0) return
+    if (!confirm(`Delete ${selectedIds.size} expense(s)? This cannot be undone.`)) return
+
+    setBulkDeleting(true)
+    try {
+      const ids = Array.from(selectedIds)
+      const { error } = await supabase.from('expenses').delete().in('id', ids).eq('family_id', familyId)
+      if (error) throw error
+
+      toast.success(`Deleted ${ids.length} expense(s)`) 
+      setSelectedIds(new Set())
+      await load()
+    } catch (e: unknown) {
+      const msg = errMsg(e)
+      toast.error(msg, 'Bulk delete failed')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }, [familyId, selectedIds, toast, load])
 
   return (
     <div className="container">
@@ -397,8 +457,23 @@ export default function ExpensesPage() {
       </div>
 
       <div className="row" style={{ marginTop: 10, justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="badge">Total: {fmtMoney(totalBaseMinor, family?.base_currency ?? 'USD')}</div>
-        <div className="help">Tip: swipe table horizontally for more columns.</div>
+        <div className="row" style={{ alignItems: 'center' }}>
+          <div className="badge">Total: {fmtMoney(totalBaseMinor, family?.base_currency ?? 'USD')}</div>
+          {selectedCount > 0 && !isMobile ? (
+            <div className="badge" style={{ marginLeft: 10 }}>
+              Selected: {selectedCount}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="row" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+          {selectedCount > 0 && !isMobile ? (
+            <button className="btn" disabled={bulkDeleting} onClick={() => void deleteSelected()}>
+              {bulkDeleting ? 'Deleting…' : 'Delete selected'}
+            </button>
+          ) : null}
+          <div className="help">Tip: swipe table horizontally for more columns.</div>
+        </div>
       </div>
 
       {isMobile ? (
@@ -461,6 +536,14 @@ export default function ExpensesPage() {
               <table className="table">
                 <thead>
                   <tr>
+                    <th style={{ width: 44 }}>
+                      <input
+                        type="checkbox"
+                        checked={allLoadedSelected}
+                        aria-label="Select all loaded"
+                        onChange={toggleSelectAllLoaded}
+                      />
+                    </th>
                     <th>Date</th>
                     <th>Category</th>
                     <th>Added by</th>
@@ -485,13 +568,21 @@ export default function ExpensesPage() {
                     ))
                   ) : rows.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ padding: 18, color: '#64748b' }}>
+                      <td colSpan={8} style={{ padding: 18, color: '#64748b' }}>
                         No expenses for this range.
                       </td>
                     </tr>
                   ) : (
                     rows.map((r) => (
                       <tr key={r.id}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(r.id)}
+                            aria-label={`Select expense ${r.id}`}
+                            onChange={() => toggleSelectOne(r.id)}
+                          />
+                        </td>
                         <td style={{ whiteSpace: 'nowrap' }}>{r.expense_date}</td>
                         <td>{normalizeCategory(r.categories)?.name ?? '—'}</td>
                         <td>{memberName(r.created_by)}</td>
