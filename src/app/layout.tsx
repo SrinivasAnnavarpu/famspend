@@ -1,6 +1,9 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import { ToastProvider } from '@/components/ToastProvider'
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'FamSpend',
@@ -20,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
