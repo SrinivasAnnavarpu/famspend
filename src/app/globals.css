@@ -101,6 +101,11 @@ a {
   grid-template-columns: 1fr;
 }
 
+/* Mobile bottom tabs (hidden on desktop) */
+.tabBar {
+  display: none;
+}
+
 .sideNav {
   position: sticky;
   top: 64px;
