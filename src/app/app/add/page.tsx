@@ -18,6 +18,8 @@ type Family = {
 type Category = {
   id: string
   name: string
+  icon: string | null
+  color: string | null
 }
 
 type Profile = {
@@ -109,7 +111,7 @@ export default function AddExpensePage() {
 
       const { data: cats, error: cErr } = await supabase
         .from('categories')
-        .select('id, name')
+        .select('id, name, icon, color')
         .eq('family_id', familyId)
         .eq('active', true)
         .order('sort_order', { ascending: true })
@@ -218,7 +220,7 @@ export default function AddExpensePage() {
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {(c.icon ? `${c.icon} ` : '') + c.name}
                   </option>
                 ))}
               </select>

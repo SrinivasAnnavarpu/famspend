@@ -19,7 +19,7 @@ function errMsg(e: unknown) {
   return String(e)
 }
 
-type Category = { id: string; name: string }
+type Category = { id: string; name: string; icon: string | null; color: string | null }
 
 type ExpenseRow = {
   id: string
@@ -33,10 +33,10 @@ type ExpenseRow = {
   fx_date: string
   notes: string | null
   // Supabase sometimes returns related rows as an array depending on relationship inference
-  categories: { id: string; name: string } | { id: string; name: string }[] | null
+  categories: { id: string; name: string; icon?: string | null; color?: string | null } | { id: string; name: string; icon?: string | null; color?: string | null }[] | null
 }
 
-function normalizeCategory(x: ExpenseRow['categories']): { id: string; name: string } | null {
+function normalizeCategory(x: ExpenseRow['categories']): { id: string; name: string; icon?: string | null; color?: string | null } | null {
   if (!x) return null
   return Array.isArray(x) ? x[0] ?? null : x
 }
@@ -129,7 +129,7 @@ export default function ExpensesPage() {
       const q = supabase
         .from('expenses')
         .select(
-          'id, created_by, expense_date, amount_original_minor, currency_original, amount_base_minor, currency_base, fx_rate, fx_date, notes, categories(id, name)'
+          'id, created_by, expense_date, amount_original_minor, currency_original, amount_base_minor, currency_base, fx_rate, fx_date, notes, categories(id, name, icon, color)'
         )
         .eq('family_id', familyId)
         .gte('expense_date', start)
@@ -177,7 +177,7 @@ export default function ExpensesPage() {
     try {
       const { data: cats, error: cErr } = await supabase
         .from('categories')
-        .select('id, name')
+        .select('id, name, icon, color')
         .eq('family_id', familyId)
         .eq('active', true)
         .order('sort_order', { ascending: true })
