@@ -70,7 +70,8 @@ export default function ExpensesPage() {
   const [hasMore, setHasMore] = useState(true)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const pageSize = 50
+  const pageSize = 20
+  const scrollRootRef = useRef<HTMLDivElement | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const [edit, setEdit] = useState<EditState | null>(null)
@@ -234,13 +235,15 @@ export default function ExpensesPage() {
     if (!hasMore) return
 
     const el = loadMoreRef.current
+    const root = scrollRootRef.current ?? null
+
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
           void loadMore()
         }
       },
-      { root: null, rootMargin: '200px', threshold: 0 }
+      { root, rootMargin: '200px', threshold: 0 }
     )
 
     obs.observe(el)
@@ -392,7 +395,7 @@ export default function ExpensesPage() {
       </div>
 
       {isMobile ? (
-        <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
+        <div ref={scrollRootRef} className="expensesScroll" style={{ marginTop: 14, display: 'grid', gap: 10 }}>
           {busy && rows.length === 0 ? (
             Array.from({ length: 8 }).map((_, i) => (
               <div className="card" key={`skm-${i}`}>
@@ -444,7 +447,7 @@ export default function ExpensesPage() {
           )}
         </div>
       ) : (
-        <div className="card" style={{ marginTop: 14 }}>
+        <div ref={scrollRootRef} className="card expensesScroll" style={{ marginTop: 14 }}>
           <div className="cardBody" style={{ padding: 0 }}>
             {busy ? <div className="tableBusyBar" /> : null}
             <div className="tableWrap">

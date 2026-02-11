@@ -101,7 +101,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <TopLink href="/app/dashboard" label="Dashboard" />
                 <TopLink href="/app/add" label="Add expense" />
               </>
-            ) : null}
+            ) : (
+              <>
+                <TopLink href="/app/add" label="Add expense" />
+                <TopLink href="/app/dashboard" label="Dashboard" />
+                <TopLink href="/app/expenses" label="Expenses" />
+              </>
+            )}
           </nav>
         </div>
 

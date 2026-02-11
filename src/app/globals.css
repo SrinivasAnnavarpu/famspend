@@ -565,6 +565,12 @@ a {
   touch-action: pan-x pan-y;
 }
 
+/* Expenses list: fixed-ish height so we show ~20 rows and scroll within */
+.expensesScroll {
+  max-height: min(70vh, 720px);
+  overflow: auto;
+}
+
 .table {
   width: 100%;
   border-collapse: separate;
