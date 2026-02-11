@@ -568,6 +568,8 @@ a {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
+  /* Prevent shorter cards from stretching to match the tallest sibling in the same row */
+  align-items: flex-start;
 }
 
 .btn {
