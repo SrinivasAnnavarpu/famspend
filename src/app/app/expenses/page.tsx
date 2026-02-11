@@ -437,13 +437,15 @@ export default function ExpensesPage() {
             placeholder="Search notes, category…"
           />
         </div>
-        <div>
-          <div className="help">From</div>
-          <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-        </div>
-        <div>
-          <div className="help">To</div>
-          <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+        <div className="dateRangeRow">
+          <div>
+            <div className="help">From</div>
+            <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          </div>
+          <div>
+            <div className="help">To</div>
+            <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </div>
         </div>
         <div>
           <div className="help">User</div>
