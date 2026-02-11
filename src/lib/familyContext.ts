@@ -34,6 +34,33 @@ export function useCurrentFamily() {
       const uid = session.user.id
       setUserId(uid)
 
+      // Ensure a profile row exists (used for display names across family members)
+      // We only create it if missing to avoid overwriting user changes.
+      try {
+        const { data: existingProf, error: exErr } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('user_id', uid)
+          .maybeSingle()
+        if (!exErr && !existingProf) {
+          const meta = (session.user.user_metadata ?? {}) as Record<string, unknown>
+          const rawName =
+            (typeof meta.full_name === 'string' && meta.full_name) ||
+            (typeof meta.name === 'string' && meta.name) ||
+            (typeof session.user.email === 'string' && session.user.email.split('@')[0]) ||
+            null
+
+          await supabase.from('profiles').insert({
+            user_id: uid,
+            display_name: rawName,
+            default_currency: 'USD',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',
+          })
+        }
+      } catch {
+        // Non-fatal (RLS/migration may not be ready yet)
+      }
+
       const { data: memberships, error: mErr } = await supabase
         .from('family_members')
         .select('family_id')
