@@ -330,6 +330,7 @@ export default function ExpensesPage() {
         const { error } = await supabase.from('expenses').delete().eq('id', id).eq('family_id', familyId)
         if (error) throw error
         toast.success('Deleted')
+        closeEdit()
         await load()
       } catch (e: unknown) {
         const msg = errMsg(e)
