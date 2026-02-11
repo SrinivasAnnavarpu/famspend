@@ -53,10 +53,11 @@ function LoginInner() {
     setBusy(true)
     setError(null)
     try {
+      const next = nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback${next}`,
         },
       })
       if (error) throw error
