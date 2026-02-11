@@ -71,7 +71,7 @@ a {
 .container {
   max-width: 980px;
   margin: 0 auto;
-  padding: 24px calc(24px + env(safe-area-inset-right)) 24px calc(24px + env(safe-area-inset-left));
+  padding: 16px calc(16px + env(safe-area-inset-right)) 16px calc(16px + env(safe-area-inset-left));
 }
 
 /* App shell */
