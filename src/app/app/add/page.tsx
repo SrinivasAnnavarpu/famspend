@@ -9,6 +9,10 @@ import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
 import { clampLen, isYmd, parsePositiveAmount, sanitizePlainText } from '@/lib/validate'
 
+function stripName(x: string) {
+  return sanitizePlainText(x).replace(/\s+/g, ' ').trim()
+}
+
 type Family = {
   id: string
   name: string
@@ -52,6 +56,10 @@ export default function AddExpensePage() {
   const [notes, setNotes] = useState<string>('')
 
   const [errs, setErrs] = useState<{ category?: string; amount?: string; date?: string; notes?: string }>({})
+
+  const [catModalOpen, setCatModalOpen] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [creatingCat, setCreatingCat] = useState(false)
 
   useEffect(() => {
     setDate(today)
@@ -127,6 +135,63 @@ export default function AddExpensePage() {
 
     void load()
   }, [router, toast, today])
+
+  async function createCategory() {
+    if (!family) return
+
+    const name = stripName(newCatName)
+    if (!name) {
+      toast.error('Enter a category name')
+      return
+    }
+    if (name.length > 40) {
+      toast.error('Category name is too long (max 40)')
+      return
+    }
+
+    setCreatingCat(true)
+    try {
+      const nextOrder = (categories?.reduce((m, c) => Math.max(m, Number((c as any).sort_order ?? 0)), -1) ?? -1) + 1
+
+      const { data: inserted, error } = await supabase
+        .from('categories')
+        .insert({
+          family_id: family.id,
+          name: clampLen(name, 40),
+          sort_order: nextOrder,
+          active: true,
+          icon: null,
+          color: null,
+        })
+        .select('id, name, icon, color')
+        .maybeSingle()
+
+      if (error) throw error
+
+      // Refresh list
+      const { data: cats, error: cErr } = await supabase
+        .from('categories')
+        .select('id, name, icon, color')
+        .eq('family_id', family.id)
+        .eq('active', true)
+        .order('sort_order', { ascending: true })
+
+      if (cErr) throw cErr
+
+      setCategories(cats ?? [])
+      const newId = inserted?.id ?? cats?.find((c) => c.name === name)?.id
+      if (newId) setCategoryId(String(newId))
+
+      toast.success('Category added')
+      setNewCatName('')
+      setCatModalOpen(false)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast.error(msg, 'Add category failed')
+    } finally {
+      setCreatingCat(false)
+    }
+  }
 
   async function addExpense() {
     if (!family || !profile) return
@@ -209,7 +274,12 @@ export default function AddExpensePage() {
         <div className="cardBody" style={{ padding: 22 }}>
           <div style={{ maxWidth: 560, margin: 0, display: 'grid', gap: 12 }}>
             <label style={{ display: 'grid', gap: 6 }}>
-              <span className="help">Category</span>
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="help">Category</span>
+                <button className="btn btnGhost" type="button" onClick={() => setCatModalOpen(true)}>
+                  + New
+                </button>
+              </div>
               <select
                 className={errs.category ? 'input inputInvalid' : 'input'}
                 value={categoryId}
@@ -273,6 +343,43 @@ export default function AddExpensePage() {
           </div>
         </div>
       </div>
+
+      {catModalOpen ? (
+        <div className="modalBackdrop" role="dialog" aria-modal="true" onClick={() => setCatModalOpen(false)}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <div>
+                <div style={{ fontWeight: 850, letterSpacing: -0.2 }}>New category</div>
+                <div className="help">Add a category you can reuse later.</div>
+              </div>
+              <button className="btn btnGhost" onClick={() => setCatModalOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="modalBody">
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span className="help">Name</span>
+                <input
+                  className="input"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="e.g., Coffee"
+                  autoFocus
+                />
+              </label>
+
+              <div className="row" style={{ marginTop: 14 }}>
+                <button className="btn btnPrimary" disabled={creatingCat} onClick={() => void createCategory()}>
+                  {creatingCat ? 'Adding…' : 'Add category'}
+                </button>
+                <button className="btn" onClick={() => setCatModalOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
