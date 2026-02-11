@@ -204,8 +204,8 @@ export default function AddExpensePage() {
       </div>
 
       <div className="card">
-        <div className="cardBody" style={{ padding: 22, maxWidth: 520 }}>
-          <div style={{ display: 'grid', gap: 12 }}>
+        <div className="cardBody" style={{ padding: 22 }}>
+          <div style={{ maxWidth: 560, margin: '0 auto', display: 'grid', gap: 12 }}>
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Category</span>
               <select
