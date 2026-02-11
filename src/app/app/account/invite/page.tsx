@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useCurrentFamily } from '@/lib/familyContext'
 import { useToast } from '@/components/ToastProvider'
 import { supabase } from '@/lib/supabaseClient'
@@ -8,12 +8,21 @@ import { randomHex } from '@/lib/invite'
 
 export default function InvitePage() {
   const toast = useToast()
-  const { family } = useCurrentFamily()
+  const { family, userId, members } = useCurrentFamily()
   const [inviteBusy, setInviteBusy] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
 
+  const isOwner = useMemo(() => {
+    if (!userId) return false
+    return members.some((m) => m.user_id === userId && m.role === 'owner')
+  }, [members, userId])
+
   async function createInvite() {
     if (!family) return
+    if (!isOwner) {
+      toast.error('Only the family owner can create invite links')
+      return
+    }
     setInviteBusy(true)
 
     async function copy(url: string) {

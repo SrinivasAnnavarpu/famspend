@@ -44,7 +44,7 @@ function TopLink({ href, label }: { href: string; label: string }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { profile } = useCurrentFamily()
+  const { profile, userId, members } = useCurrentFamily()
 
   const [open, setOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -66,6 +66,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const name = profile?.display_name?.trim()
     return name && name.length > 0 ? name : 'Account'
   }, [profile?.display_name])
+
+  const isOwner = useMemo(() => {
+    if (!userId) return false
+    return members.some((m) => m.user_id === userId && m.role === 'owner')
+  }, [members, userId])
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -126,9 +131,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <button className="menuItem" onClick={() => { setMenuOpen(false); router.push('/app/account') }}>
                   Account
                 </button>
-                <button className="menuItem" onClick={() => { setMenuOpen(false); router.push('/app/account/invite') }}>
-                  Invite
-                </button>
+                {isOwner ? (
+                  <button className="menuItem" onClick={() => { setMenuOpen(false); router.push('/app/account/invite') }}>
+                    Invite
+                  </button>
+                ) : null}
                 <div className="menuSep" />
                 <button className="menuItem" onClick={() => { setMenuOpen(false); void signOut() }}>
                   Sign out

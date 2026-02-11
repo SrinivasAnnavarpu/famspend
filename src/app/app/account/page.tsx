@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCurrentFamily } from '@/lib/familyContext'
 import { useToast } from '@/components/ToastProvider'
@@ -8,7 +9,12 @@ import { supabase } from '@/lib/supabaseClient'
 export default function AccountPage() {
   const router = useRouter()
   const toast = useToast()
-  const { profile, family } = useCurrentFamily()
+  const { profile, family, userId, members } = useCurrentFamily()
+
+  const isOwner = useMemo(() => {
+    if (!userId) return false
+    return members.some((m) => m.user_id === userId && m.role === 'owner')
+  }, [members, userId])
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -52,9 +58,11 @@ export default function AccountPage() {
                   )}
                 </p>
                 <div className="row" style={{ marginTop: 10 }}>
-                  <button className="btn" onClick={() => router.push('/app/account/invite')}>
-                    Invite
-                  </button>
+                  {isOwner ? (
+                    <button className="btn" onClick={() => router.push('/app/account/invite')}>
+                      Invite
+                    </button>
+                  ) : null}
                   <button className="btn" onClick={() => router.push('/app/account/settings')}>
                     Settings
                   </button>

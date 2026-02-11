@@ -571,6 +571,12 @@ a {
   overflow: auto;
 }
 
+/* Sticky table header inside scroll container */
+.table thead th {
+  top: 0;
+  z-index: 2;
+}
+
 .table {
   width: 100%;
   border-collapse: separate;

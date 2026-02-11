@@ -447,10 +447,10 @@ export default function ExpensesPage() {
           )}
         </div>
       ) : (
-        <div ref={scrollRootRef} className="card expensesScroll" style={{ marginTop: 14 }}>
+        <div className="card" style={{ marginTop: 14 }}>
           <div className="cardBody" style={{ padding: 0 }}>
             {busy ? <div className="tableBusyBar" /> : null}
-            <div className="tableWrap">
+            <div ref={scrollRootRef} className="tableWrap expensesScroll">
               <table className="table">
                 <thead>
                   <tr>
