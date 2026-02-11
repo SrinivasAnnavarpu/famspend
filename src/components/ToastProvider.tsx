@@ -22,8 +22,8 @@ function randomId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-const TOAST_TTL_MS = 3000
-const TOAST_EXIT_MS = 220
+const TOAST_TTL_MS = 2200
+const TOAST_EXIT_MS = 180
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const push = useCallback((t: { type: ToastType; title?: string; message: string }) => {
     const id = randomId()
     const toast: Toast = { id, ...t, state: 'enter' }
-    setToasts((prev) => [toast, ...prev].slice(0, 3))
+    setToasts((prev) => [toast, ...prev].slice(0, 2))
 
     window.setTimeout(() => {
       setToasts((prev) => prev.map((x) => (x.id === id ? { ...x, state: 'leave' } : x)))
@@ -48,16 +48,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        style={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          display: 'grid',
-          gap: 10,
-          zIndex: 9999,
-          width: 360,
-          maxWidth: 'calc(100vw - 32px)',
-        }}
+        className="toastStack"
         aria-live="polite"
         aria-relevant="additions"
       >
@@ -99,11 +90,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 ...animStyle,
               }}
             >
-              <div className="cardBody" style={{ padding: 12 }}>
+              <div className="cardBody" style={{ padding: 10 }}>
                 {t.title ? (
-                  <div style={{ fontWeight: 850, letterSpacing: -0.2 }}>{t.title}</div>
+                  <div style={{ fontWeight: 850, letterSpacing: -0.2, fontSize: 13 }}>{t.title}</div>
                 ) : null}
-                <div style={{ color: '#0f172a', marginTop: t.title ? 4 : 0, fontSize: 14, lineHeight: 1.35 }}>
+                <div style={{ color: '#0f172a', marginTop: t.title ? 3 : 0, fontSize: 13, lineHeight: 1.3 }}>
                   {t.message}
                 </div>
               </div>
