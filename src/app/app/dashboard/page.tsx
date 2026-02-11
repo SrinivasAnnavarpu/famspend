@@ -7,7 +7,7 @@ import { useCurrentFamily } from '@/lib/familyContext'
 import { useExpensesRealtime } from '@/lib/expensesRealtime'
 import { supabase } from '@/lib/supabaseClient'
 import { downloadText, toCsv } from '@/lib/csv'
-import { AppNav } from '@/components/AppNav'
+// (nav handled by AppShell)
 
 type ExpenseRow = {
   id: string
@@ -167,8 +167,7 @@ export default function DashboardPage() {
             <div className="help">{family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}</div>
           </div>
         </div>
-        <div className="row" style={{ alignItems: 'center' }}>
-          <AppNav />
+        <div className="row" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
           <button className="btn" onClick={exportCsv}>Export CSV</button>
         </div>
       </div>

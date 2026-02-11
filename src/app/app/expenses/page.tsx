@@ -8,7 +8,7 @@ import { useExpensesRealtime } from '@/lib/expensesRealtime'
 import { getFxRate } from '@/lib/fx'
 import { toMinorUnits } from '@/lib/money'
 import { supabase } from '@/lib/supabaseClient'
-import { AppNav } from '@/components/AppNav'
+// (nav handled by AppShell)
 
 function errMsg(e: unknown) {
   if (e instanceof Error) return e.message
@@ -341,7 +341,7 @@ export default function ExpensesPage() {
             {family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}
           </div>
         </div>
-        <AppNav />
+        {/* nav handled by AppShell */}
       </div>
 
       <div className="filtersGrid">

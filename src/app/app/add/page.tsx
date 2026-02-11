@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useToast } from '@/components/ToastProvider'
-import { AppNav } from '@/components/AppNav'
+// (nav handled by AppShell)
 import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
 
@@ -192,7 +192,7 @@ export default function AddExpensePage() {
             </div>
           </div>
         </div>
-        <AppNav />
+        {/* nav handled by AppShell */}
       </div>
 
       <div className="card">
