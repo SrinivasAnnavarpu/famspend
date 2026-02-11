@@ -51,12 +51,13 @@ export default function SettingsPage() {
     if (!userId) return
     setSavingProfile(true)
     try {
-      // Only owner can change profile settings other than their own display name.
+      // Members can edit their display name + default currency.
+      // Timezone is owner-only for now.
       const patch: Record<string, unknown> = {
         display_name: displayName.trim() ? displayName.trim() : null,
+        default_currency: defaultCurrency.toUpperCase(),
       }
       if (isOwner) {
-        patch.default_currency = defaultCurrency.toUpperCase()
         patch.timezone = timezone.trim() || 'UTC'
       }
 
@@ -159,7 +160,7 @@ export default function SettingsPage() {
             <p className="help" style={{ marginTop: 6 }}>
               {isOwner
                 ? 'These settings affect your default currency and how your name appears in expenses.'
-                : 'You can update your display name. Other profile settings are managed by the family owner.'}
+                : 'You can update your display name and default currency. Other settings are managed by the family owner.'}
             </p>
 
             <div style={{ marginTop: 14, display: 'grid', gap: 12 }}>
@@ -173,7 +174,6 @@ export default function SettingsPage() {
                 <select
                   className="input"
                   value={defaultCurrency}
-                  disabled={!isOwner}
                   onChange={(e) => setDefaultCurrency(e.target.value)}
                 >
                   {currencyChoices.map((c) => (
@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
               <div className="row" style={{ marginTop: 4 }}>
                 <button className="btn btnPrimary" disabled={savingProfile} onClick={() => void saveProfile()}>
-                  {savingProfile ? 'Saving…' : isOwner ? 'Save profile' : 'Save display name'}
+                  {savingProfile ? 'Saving…' : isOwner ? 'Save profile' : 'Save'}
                 </button>
               </div>
             </div>
