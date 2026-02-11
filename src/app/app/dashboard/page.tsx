@@ -193,17 +193,18 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <div className="cardBody" style={{ padding: 22 }}>
-          <div className="badge">Selected range</div>
-          <h1 className="h1" style={{ marginTop: 12 }}>
-            {pretty} {family?.base_currency ?? ''}
-          </h1>
-          <p className="p">Realtime enabled for this family.</p>
-        </div>
-      </div>
-
       <div className="row" style={{ marginTop: 14 }}>
+        {/* Selected range + Users side-by-side on desktop; wraps on mobile */}
+        <div className="card" style={{ flex: '1 1 340px' }}>
+          <div className="cardBody" style={{ padding: 22 }}>
+            <div className="badge">Selected range</div>
+            <h1 className="h1" style={{ marginTop: 12 }}>
+              {pretty} {family?.base_currency ?? ''}
+            </h1>
+            <p className="p">Realtime enabled for this family.</p>
+          </div>
+        </div>
+
         <div className="card" style={{ flex: '1 1 340px' }}>
           <div className="cardBody">
             <div className="h2">Users</div>
@@ -221,14 +222,14 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="card" style={{ flex: '1 1 340px' }}>
-          <div className="cardBody">
-            <div className="h2">Next</div>
-            <p className="p" style={{ marginTop: 6 }}>
-              We’ll add category breakdown and a full expenses table (edit/delete + filter) next.
-            </p>
-          </div>
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="cardBody">
+          <div className="h2">Next</div>
+          <p className="p" style={{ marginTop: 6 }}>
+            We’ll add category breakdown and a full expenses table (edit/delete + filter) next.
+          </p>
         </div>
       </div>
     </div>
