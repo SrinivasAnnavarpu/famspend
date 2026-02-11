@@ -160,12 +160,9 @@ export default function DashboardPage() {
   return (
     <div className="container">
       <div className="header">
-        <div className="brand">
-          <div className="logo" aria-hidden />
-          <div>
-            <div className="brandTitle">Dashboard</div>
-            <div className="help">{family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}</div>
-          </div>
+        <div>
+          <div className="brandTitle">Dashboard</div>
+          <div className="help">{family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}</div>
         </div>
         <div className="row" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
           <button className="btn" onClick={exportCsv}>Export CSV</button>
