@@ -8,6 +8,7 @@ function LoginInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get('next')
+  const signedUp = searchParams.get('signedUp') === '1'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -71,6 +72,13 @@ function LoginInner() {
         <div className="cardBody" style={{ padding: 22 }}>
           <h1 className="h1" style={{ fontSize: 30 }}>Welcome back</h1>
           <p className="p">Sign in with email or Google.</p>
+          {signedUp ? (
+            <div className="card" style={{ marginTop: 12 }}>
+              <div className="cardBody" style={{ padding: 12, color: '#475569' }}>
+                Account created. If email verification is enabled, please check your inbox and confirm, then sign in.
+              </div>
+            </div>
+          ) : null}
 
           <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
             <label style={{ display: 'grid', gap: 6 }}>

@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { clampLen, isEmail } from '@/lib/validate'
+import { isEmail } from '@/lib/validate'
 
 function guessCurrency(country: string) {
   const c = country.toLowerCase()
@@ -59,13 +59,12 @@ function SignupInner() {
       if (password.length < 8) throw new Error('Password must be at least 8 characters')
       if (password !== confirm) throw new Error('Passwords do not match')
 
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
-      const defaultCurrency = guessCurrency(country)
-
-      const { data, error: sErr } = await supabase.auth.signUp({
+      const { error: sErr } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: {
+          // Send the user back to our confirm handler after they click the email link.
+          emailRedirectTo: `${window.location.origin}/auth/confirm${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
           data: {
             username: u,
             country,
@@ -74,22 +73,10 @@ function SignupInner() {
       })
       if (sErr) throw sErr
 
-      // If email confirmations are OFF, we should have a session and can create the profile row.
-      const userId = data.user?.id
-      if (userId) {
-        // Best-effort: profile RLS may block in some envs.
-        await supabase.from('profiles').upsert(
-          {
-            user_id: userId,
-            display_name: clampLen(u, 40),
-            default_currency: defaultCurrency,
-            timezone: clampLen(tz, 64),
-          },
-          { onConflict: 'user_id' }
-        )
-      }
-
-      router.replace(nextPath ?? '/app')
+      // Always send users to login after signup.
+      // If email confirmation is enabled, they must click the link first.
+      const next = nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''
+      router.replace(`/login${next}${next ? '&' : '?'}signedUp=1`)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
