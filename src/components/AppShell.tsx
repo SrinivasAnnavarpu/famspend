@@ -99,6 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ) : pathname === '/app/expenses' ? (
               <>
                 <TopLink href="/app/dashboard" label="Dashboard" />
+                <TopLink href="/app/add" label="Add expense" />
               </>
             ) : null}
           </nav>
