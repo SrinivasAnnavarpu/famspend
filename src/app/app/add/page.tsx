@@ -7,7 +7,7 @@ import { useToast } from '@/components/ToastProvider'
 // (nav handled by AppShell)
 import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
-import { clampLen, isYmd, parsePositiveAmount } from '@/lib/validate'
+import { clampLen, isYmd, parsePositiveAmount, sanitizePlainText } from '@/lib/validate'
 
 type Family = {
   id: string
@@ -48,6 +48,8 @@ export default function AddExpensePage() {
   const [amount, setAmount] = useState<string>('')
   const [date, setDate] = useState<string>('')
   const [notes, setNotes] = useState<string>('')
+
+  const [errs, setErrs] = useState<{ category?: string; amount?: string; date?: string; notes?: string }>({})
 
   useEffect(() => {
     setDate(today)
@@ -126,21 +128,21 @@ export default function AddExpensePage() {
 
   async function addExpense() {
     if (!family || !profile) return
-    if (!categoryId) {
-      toast.error('Pick a category')
-      return
-    }
+
+    const nextErrs: { category?: string; amount?: string; date?: string; notes?: string } = {}
+    if (!categoryId) nextErrs.category = 'Pick a category'
+
     const amt = parsePositiveAmount(amount)
-    if (!amt.ok) {
-      toast.error(amt.error)
-      return
-    }
-    if (!date || !isYmd(date)) {
-      toast.error('Pick a valid date')
-      return
-    }
-    if (notes.length > 280) {
-      toast.error('Notes are too long (max 280 characters)')
+    if (!amt.ok) nextErrs.amount = amt.error
+
+    if (!date || !isYmd(date)) nextErrs.date = 'Pick a valid date'
+
+    const notesClean = sanitizePlainText(notes)
+    if (notesClean.length > 280) nextErrs.notes = 'Notes are too long (max 280 characters)'
+
+    setErrs(nextErrs)
+    if (Object.keys(nextErrs).length > 0) {
+      toast.error('Please fix the highlighted fields')
       return
     }
 
@@ -150,12 +152,15 @@ export default function AddExpensePage() {
       const session = data.session
       if (!session) throw new Error('Not signed in')
 
+      if (!amt.ok) throw new Error(amt.error)
       const originalMinor = toMinorUnits(amt.value)
       const originalCurrency = profile.default_currency
       const baseCurrency = family.base_currency
 
       const fxRate = await getFxRate({ from: originalCurrency, to: baseCurrency, date })
       const baseMinor = Math.round(originalMinor * fxRate)
+
+      const safeNotes = notesClean.trim() ? clampLen(notesClean.trim(), 280) : null
 
       const { error } = await supabase.from('expenses').insert({
         family_id: family.id,
@@ -169,7 +174,7 @@ export default function AddExpensePage() {
         fx_rate: fxRate,
         fx_date: date,
         amount_base_minor: baseMinor,
-        notes: notes.trim() ? clampLen(notes.trim(), 280) : null,
+        notes: safeNotes,
       })
 
       if (error) throw error
@@ -204,9 +209,12 @@ export default function AddExpensePage() {
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Category</span>
               <select
-                className="input"
+                className={errs.category ? 'input inputInvalid' : 'input'}
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
+                onChange={(e) => {
+                  setCategoryId(e.target.value)
+                  setErrs((p) => ({ ...p, category: undefined }))
+                }}
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -219,10 +227,13 @@ export default function AddExpensePage() {
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Amount ({profile?.default_currency ?? '—'})</span>
               <input
-                className="input"
+                className={errs.amount ? 'input inputInvalid' : 'input'}
                 inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  setAmount(e.target.value)
+                  setErrs((p) => ({ ...p, amount: undefined }))
+                }}
                 placeholder="0.00"
               />
               <span className="help">Currency is taken from your settings. Change it later by editing the expense.</span>
@@ -230,15 +241,26 @@ export default function AddExpensePage() {
 
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Date</span>
-              <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <input
+                className={errs.date ? 'input inputInvalid' : 'input'}
+                type="date"
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value)
+                  setErrs((p) => ({ ...p, date: undefined }))
+                }}
+              />
             </label>
 
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Notes (optional)</span>
               <input
-                className="input"
+                className={errs.notes ? 'input inputInvalid' : 'input'}
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e) => {
+                  setNotes(e.target.value)
+                  setErrs((p) => ({ ...p, notes: undefined }))
+                }}
                 placeholder="e.g., groceries, Uber, electricity bill"
               />
             </label>

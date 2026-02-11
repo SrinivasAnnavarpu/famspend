@@ -567,6 +567,11 @@ a {
   border-color: rgba(37, 99, 235, 0.5);
 }
 
+.inputInvalid {
+  border-color: rgba(220, 38, 38, 0.55);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
 .help {
   font-size: 13px;
   color: var(--muted);
