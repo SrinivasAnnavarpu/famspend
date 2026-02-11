@@ -55,7 +55,7 @@ export default function AccountPage() {
                   <button className="btn" onClick={() => router.push('/app/account/invite')}>
                     Invite
                   </button>
-                  <button className="btn" onClick={() => { toast.info('Settings page coming next'); }}>
+                  <button className="btn" onClick={() => router.push('/app/account/settings')}>
                     Settings
                   </button>
                 </div>
