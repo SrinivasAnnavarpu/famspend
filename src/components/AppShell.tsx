@@ -31,6 +31,16 @@ function NavLink({
   )
 }
 
+function TopLink({ href, label }: { href: string; label: string }) {
+  const pathname = usePathname()
+  const active = pathname === href
+  return (
+    <Link href={href} className={active ? 'topLink topLinkActive' : 'topLink'} prefetch={false}>
+      {label}
+    </Link>
+  )
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -73,6 +83,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="logo" aria-hidden />
             <span className="brandTitle">FamSpend</span>
           </Link>
+
+          {/* Desktop quick links (account stays in profile menu) */}
+          <nav className="topLinks" aria-label="Quick navigation">
+            {pathname === '/app/dashboard' ? (
+              <>
+                <TopLink href="/app/add" label="Add expense" />
+                <TopLink href="/app/expenses" label="Expenses" />
+              </>
+            ) : pathname === '/app/add' ? (
+              <>
+                <TopLink href="/app/dashboard" label="Dashboard" />
+                <TopLink href="/app/expenses" label="Expenses" />
+              </>
+            ) : pathname === '/app/expenses' ? (
+              <>
+                <TopLink href="/app/dashboard" label="Dashboard" />
+              </>
+            ) : null}
+          </nav>
         </div>
 
         <div className="topNavRight">
