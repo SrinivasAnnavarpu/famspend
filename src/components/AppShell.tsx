@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -48,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [open, setOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuWrapRef = useRef<HTMLDivElement | null>(null)
 
   // Drawer is closed by default; open only via hamburger.
   useEffect(() => {
@@ -68,6 +69,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut()
     router.replace('/login')
   }
+
+  useEffect(() => {
+    function onDocMouseDown(e: MouseEvent) {
+      if (!menuOpen) return
+      const el = menuWrapRef.current
+      if (!el) return
+      if (e.target && el.contains(e.target as Node)) return
+      setMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [menuOpen])
 
   return (
     <div className="appShell">
@@ -109,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="topNavRight">
-          <div className="profileWrap">
+          <div className="profileWrap" ref={menuWrapRef}>
             <button className="profileBtn" onClick={() => setMenuOpen((v) => !v)}>
               <span className="avatar" aria-hidden>
                 {(who[0] ?? 'A').toUpperCase()}
