@@ -155,7 +155,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="sideSection" style={{ marginTop: 12 }}>Account</div>
           <NavLink href="/app/account" label="Account" onNavigate={() => setOpen(false)} />
-          <NavLink href="/app/account/invite" label="Invite" onNavigate={() => setOpen(false)} />
+          {isOwner ? <NavLink href="/app/account/invite" label="Invite" onNavigate={() => setOpen(false)} /> : null}
+          <NavLink href="/app/account/settings" label="Settings" onNavigate={() => setOpen(false)} />
 
           <div className="sideFooter">
             <span className="help">{pathname}</span>
