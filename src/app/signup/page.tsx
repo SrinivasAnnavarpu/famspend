@@ -31,6 +31,18 @@ function SignupInner() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const canSubmit = useMemo(() => {
+    const u = username.trim()
+    const e = email.trim()
+    if (!u) return false
+    if (u.length > 40) return false
+    if (!e) return false
+    if (!isEmail(e)) return false
+    if (password.length < 8) return false
+    if (password !== confirm) return false
+    return true
+  }, [username, email, password, confirm])
+
   const countries = useMemo(
     () => [
       'United States',
@@ -105,6 +117,7 @@ function SignupInner() {
               <input
                 className="input"
                 value={username}
+                required
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="e.g., Manash"
                 autoComplete="name"
@@ -128,6 +141,7 @@ function SignupInner() {
               <input
                 className="input"
                 value={email}
+                required
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
@@ -139,6 +153,8 @@ function SignupInner() {
               <input
                 className="input"
                 value={password}
+                required
+                minLength={8}
                 type="password"
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -151,6 +167,8 @@ function SignupInner() {
               <input
                 className="input"
                 value={confirm}
+                required
+                minLength={8}
                 type="password"
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="••••••••"
@@ -160,7 +178,7 @@ function SignupInner() {
 
             {error ? <div className="alertError">{error}</div> : null}
 
-            <button className="btn btnPrimary" disabled={busy} onClick={() => void signUp()}>
+            <button className="btn btnPrimary" disabled={busy || !canSubmit} onClick={() => void signUp()}>
               {busy ? 'Creating…' : 'Create account'}
             </button>
 

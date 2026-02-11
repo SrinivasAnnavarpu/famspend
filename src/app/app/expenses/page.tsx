@@ -620,12 +620,22 @@ export default function ExpensesPage() {
                 />
               </div>
 
-              <div className="row" style={{ marginTop: 14 }}>
-                <button className="btn btnPrimary" disabled={saving} onClick={() => void saveEdit()}>
-                  {saving ? 'Saving…' : 'Save changes'}
-                </button>
-                <button className="btn" onClick={closeEdit}>
-                  Cancel
+              <div className="row" style={{ marginTop: 14, justifyContent: 'space-between' }}>
+                <div className="row">
+                  <button className="btn btnPrimary" disabled={saving} onClick={() => void saveEdit()}>
+                    {saving ? 'Saving…' : 'Save changes'}
+                  </button>
+                  <button className="btn" onClick={closeEdit}>
+                    Cancel
+                  </button>
+                </div>
+
+                <button
+                  className="btn"
+                  disabled={deletingId === edit.id}
+                  onClick={() => void deleteExpense(edit.id)}
+                >
+                  {deletingId === edit.id ? '…' : 'Delete'}
                 </button>
               </div>
             </div>
