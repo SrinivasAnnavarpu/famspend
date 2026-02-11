@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastProvider'
 // (nav handled by AppShell)
 import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
+import { clampLen, isYmd, parsePositiveAmount } from '@/lib/validate'
 
 type Family = {
   id: string
@@ -129,12 +130,17 @@ export default function AddExpensePage() {
       toast.error('Pick a category')
       return
     }
-    if (!amount.trim()) {
-      toast.error('Enter an amount')
+    const amt = parsePositiveAmount(amount)
+    if (!amt.ok) {
+      toast.error(amt.error)
       return
     }
-    if (!date) {
-      toast.error('Pick a date')
+    if (!date || !isYmd(date)) {
+      toast.error('Pick a valid date')
+      return
+    }
+    if (notes.length > 280) {
+      toast.error('Notes are too long (max 280 characters)')
       return
     }
 
@@ -144,7 +150,7 @@ export default function AddExpensePage() {
       const session = data.session
       if (!session) throw new Error('Not signed in')
 
-      const originalMinor = toMinorUnits(amount)
+      const originalMinor = toMinorUnits(amt.value)
       const originalCurrency = profile.default_currency
       const baseCurrency = family.base_currency
 
@@ -163,7 +169,7 @@ export default function AddExpensePage() {
         fx_rate: fxRate,
         fx_date: date,
         amount_base_minor: baseMinor,
-        notes: notes.trim() ? notes.trim() : null,
+        notes: notes.trim() ? clampLen(notes.trim(), 280) : null,
       })
 
       if (error) throw error

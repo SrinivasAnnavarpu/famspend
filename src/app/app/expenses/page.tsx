@@ -8,6 +8,7 @@ import { useExpensesRealtime } from '@/lib/expensesRealtime'
 import { getFxRate } from '@/lib/fx'
 import { toMinorUnits } from '@/lib/money'
 import { supabase } from '@/lib/supabaseClient'
+import { clampLen, isYmd, parsePositiveAmount } from '@/lib/validate'
 // (nav handled by AppShell)
 
 function errMsg(e: unknown) {
@@ -277,7 +278,12 @@ export default function ExpensesPage() {
 
     setSaving(true)
     try {
-      const originalMinor = toMinorUnits(edit.amount)
+      const amt = parsePositiveAmount(edit.amount)
+      if (!amt.ok) throw new Error(amt.error)
+      if (!isYmd(edit.expense_date)) throw new Error('Pick a valid date')
+      if (edit.notes.length > 280) throw new Error('Notes are too long (max 280 characters)')
+
+      const originalMinor = toMinorUnits(amt.value)
       const baseCurrency = family.base_currency
       const fromCurrency = edit.currency_original
       const date = edit.expense_date
@@ -296,7 +302,7 @@ export default function ExpensesPage() {
           fx_date: date,
           amount_base_minor: baseMinor,
           currency_base: baseCurrency,
-          notes: edit.notes.trim() ? edit.notes.trim() : null,
+          notes: edit.notes.trim() ? clampLen(edit.notes.trim(), 280) : null,
         })
         .eq('id', edit.id)
         .eq('family_id', familyId)

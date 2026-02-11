@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { clampLen, isEmail } from '@/lib/validate'
 
 function guessCurrency(country: string) {
   const c = country.toLowerCase()
@@ -52,15 +53,17 @@ function SignupInner() {
     try {
       const u = username.trim()
       if (!u) throw new Error('Enter a username')
+      if (u.length > 40) throw new Error('Username is too long (max 40)')
       if (!email.trim()) throw new Error('Enter an email')
-      if (password.length < 6) throw new Error('Password must be at least 6 characters')
+      if (!isEmail(email)) throw new Error('Enter a valid email')
+      if (password.length < 8) throw new Error('Password must be at least 8 characters')
       if (password !== confirm) throw new Error('Passwords do not match')
 
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
       const defaultCurrency = guessCurrency(country)
 
       const { data, error: sErr } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
@@ -78,9 +81,9 @@ function SignupInner() {
         await supabase.from('profiles').upsert(
           {
             user_id: userId,
-            display_name: u,
+            display_name: clampLen(u, 40),
             default_currency: defaultCurrency,
-            timezone: tz,
+            timezone: clampLen(tz, 64),
           },
           { onConflict: 'user_id' }
         )
