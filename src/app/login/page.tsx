@@ -19,19 +19,9 @@ function LoginInner() {
     })
   }, [router, nextPath])
 
-  async function signUp() {
-    setBusy(true)
-    setError(null)
-    try {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) throw error
-      alert('Signup successful. If email confirmation is enabled, check your inbox.')
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      setError(msg)
-    } finally {
-      setBusy(false)
-    }
+  function goToSignUp() {
+    const next = nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''
+    router.push(`/signup${next}`)
   }
 
   async function signIn() {
@@ -112,7 +102,7 @@ function LoginInner() {
               <button className="btn btnPrimary" disabled={busy} onClick={signIn}>
                 Sign in
               </button>
-              <button className="btn" disabled={busy} onClick={signUp}>
+              <button className="btn" disabled={busy} onClick={goToSignUp}>
                 Sign up
               </button>
             </div>
@@ -122,7 +112,7 @@ function LoginInner() {
             </button>
 
             <p className="help" style={{ marginTop: 8 }}>
-              Tip: Use the same account on both phones to sync into the same family.
+              Tip: Each person should sign in with their own account, then join the family via an invite link.
             </p>
           </div>
         </div>
