@@ -203,9 +203,9 @@ export default function AddExpensePage() {
         {/* nav handled by AppShell */}
       </div>
 
-      <div className="card">
+      <div className="card" style={{ maxWidth: 720 }}>
         <div className="cardBody" style={{ padding: 22 }}>
-          <div style={{ maxWidth: 560, margin: '0 auto', display: 'grid', gap: 12 }}>
+          <div style={{ maxWidth: 560, margin: 0, display: 'grid', gap: 12 }}>
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="help">Category</span>
               <select
