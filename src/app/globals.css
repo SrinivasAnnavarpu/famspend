@@ -45,6 +45,29 @@ a {
   text-decoration: none;
 }
 
+.inputWrap {
+  position: relative;
+}
+
+.inputClear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-weight: 900;
+  color: #64748b;
+}
+
+.inputClear:hover {
+  color: #0f172a;
+}
+
 /* Toasts */
 .toastStack {
   position: fixed;
@@ -222,6 +245,11 @@ a {
   grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr 1fr;
   gap: 14px;
   align-items: end;
+}
+
+/* Dashboard filter layout (desktop/tablet) */
+.dashboardFilters {
+  grid-template-columns: 1.2fr 1fr;
 }
 
 @media (max-width: 860px) {

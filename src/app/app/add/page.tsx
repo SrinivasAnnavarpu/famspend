@@ -9,6 +9,7 @@ import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
 import { clampLen, isYmd, parsePositiveAmount, sanitizePlainText } from '@/lib/validate'
 import { enqueue, flushQueue, peekAll } from '@/lib/offlineQueue'
+import { CategoryPicker } from '@/components/CategoryPicker'
 
 function stripName(x: string) {
   return sanitizePlainText(x).replace(/\s+/g, ' ').trim()
@@ -52,6 +53,7 @@ export default function AddExpensePage() {
   }, [])
 
   const [categoryId, setCategoryId] = useState<string>('')
+  const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [amount, setAmount] = useState<string>('')
   const [date, setDate] = useState<string>('')
   const [notes, setNotes] = useState<string>('')
@@ -318,20 +320,56 @@ export default function AddExpensePage() {
                   + New
                 </button>
               </div>
-              <select
+              <button
+                type="button"
                 className={errs.category ? 'input inputInvalid' : 'input'}
-                value={categoryId}
-                onChange={(e) => {
-                  setCategoryId(e.target.value)
+                style={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
+                onClick={() => setCatPickerOpen(true)}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  {(() => {
+                    const c = categories.find((x) => String(x.id) === String(categoryId))
+                    const icon = c?.icon
+                    const color = c?.color
+                    return (
+                      <>
+                        <span
+                          aria-hidden
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 999,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: color ?? 'rgba(148, 163, 184, 0.18)',
+                            border: '1px solid rgba(15, 23, 42, 0.08)',
+                            flex: '0 0 auto',
+                          }}
+                        >
+                          <span style={{ fontSize: 16 }}>{icon ?? '•'}</span>
+                        </span>
+                        <span style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c?.name ?? 'Select category'}
+                        </span>
+                      </>
+                    )
+                  })()}
+                </span>
+                <span aria-hidden style={{ color: '#64748b' }}>▾</span>
+              </button>
+
+              <CategoryPicker
+                open={catPickerOpen}
+                title="Select category"
+                categories={categories}
+                selectedId={categoryId || null}
+                onSelect={(id) => {
+                  setCategoryId(id)
                   setErrs((p) => ({ ...p, category: undefined }))
                 }}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {(c.icon ? `${c.icon} ` : '') + c.name}
-                  </option>
-                ))}
-              </select>
+                onClose={() => setCatPickerOpen(false)}
+              />
             </label>
 
             <label style={{ display: 'grid', gap: 6 }}>

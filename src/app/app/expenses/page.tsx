@@ -9,6 +9,7 @@ import { getFxRate } from '@/lib/fx'
 import { toMinorUnits } from '@/lib/money'
 import { supabase } from '@/lib/supabaseClient'
 import { clampLen, isYmd, parsePositiveAmount } from '@/lib/validate'
+import { CategoryPicker } from '@/components/CategoryPicker'
 // (nav handled by AppShell)
 
 function errMsg(e: unknown) {
@@ -43,6 +44,7 @@ function normalizeCategory(x: ExpenseRow['categories']): { id: string; name: str
 
 type EditState = {
   id: string
+  created_by: string
   category_id: string | null
   expense_date: string
   amount: string
@@ -81,6 +83,8 @@ export default function ExpensesPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isMobile, setIsMobile] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [catPickerOpen, setCatPickerOpen] = useState(false)
 
   const currencyChoices = useMemo(
     () => ['USD', 'INR', 'EUR', 'GBP', 'CAD', 'AUD', 'SGD', 'JPY'],
@@ -104,6 +108,12 @@ export default function ExpensesPage() {
   const [end, setEnd] = useState(monthRange.end)
   const [userFilter, setUserFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+
+  // Staged filter edits (apply on demand)
+  const [tmpStart, setTmpStart] = useState(monthRange.start)
+  const [tmpEnd, setTmpEnd] = useState(monthRange.end)
+  const [tmpUserFilter, setTmpUserFilter] = useState<string>('all')
+  const [tmpCategoryFilter, setTmpCategoryFilter] = useState<string>('all')
 
   const isOwner = useMemo(() => {
     if (!userId) return false
@@ -225,7 +235,11 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 520px)')
-    const sync = () => setIsMobile(mq.matches)
+    const sync = () => {
+      const mobile = mq.matches
+      setIsMobile(mobile)
+      setFiltersOpen(false)
+    }
     sync()
     mq.addEventListener?.('change', sync)
     return () => mq.removeEventListener?.('change', sync)
@@ -266,8 +280,15 @@ export default function ExpensesPage() {
 
   const openEdit = useCallback(
     (r: ExpenseRow) => {
+      const canEdit = Boolean(isOwner || (userId && r.created_by === userId))
+      if (!canEdit) {
+        toast.error('You can only edit expenses you created')
+        return
+      }
+
       setEdit({
         id: r.id,
+        created_by: r.created_by,
         category_id: normalizeCategory(r.categories)?.id ?? null,
         expense_date: r.expense_date,
         amount: toMajor(r.amount_original_minor),
@@ -275,7 +296,7 @@ export default function ExpensesPage() {
         notes: r.notes ?? '',
       })
     },
-    []
+    [isOwner, userId, toast]
   )
 
   const closeEdit = useCallback(() => setEdit(null), [])
@@ -283,6 +304,13 @@ export default function ExpensesPage() {
   const saveEdit = useCallback(async () => {
     if (!familyId || !family) return
     if (!edit) return
+
+    const canEdit = Boolean(isOwner || (userId && edit.created_by === userId))
+    if (!canEdit) {
+      toast.error('You can only edit expenses you created')
+      closeEdit()
+      return
+    }
 
     setSaving(true)
     try {
@@ -326,13 +354,15 @@ export default function ExpensesPage() {
     } finally {
       setSaving(false)
     }
-  }, [familyId, family, edit, toast, closeEdit, load])
+  }, [familyId, family, edit, toast, closeEdit, load, isOwner, userId])
 
   const deleteExpense = useCallback(
     async (id: string) => {
       if (!familyId) return
-      if (!isOwner) {
-        toast.error('Only the family owner can delete expenses')
+      const row = rows.find((r) => r.id === id)
+      const canDelete = Boolean(isOwner || (row && userId && row.created_by === userId))
+      if (!canDelete) {
+        toast.error('You can only delete expenses you created')
         return
       }
       if (!confirm('Delete this expense?')) return
@@ -356,7 +386,7 @@ export default function ExpensesPage() {
         setDeletingId(null)
       }
     },
-    [familyId, toast, load, closeEdit]
+    [familyId, toast, load, closeEdit, isOwner, rows, userId]
   )
 
   const allLoadedSelected = useMemo(() => {
@@ -427,49 +457,162 @@ export default function ExpensesPage() {
         {/* nav handled by AppShell */}
       </div>
 
-      <div className="filtersGrid">
-        <div>
-          <div className="help">Search</div>
+      {/* Search always visible */}
+      <div style={{ marginTop: 10 }}>
+        <div className="help">Search</div>
+        <div className="inputWrap">
           <input
             className="input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search notes, category…"
           />
-        </div>
-        <div className="dateRangeRow">
-          <div>
-            <div className="help">From</div>
-            <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          </div>
-          <div>
-            <div className="help">To</div>
-            <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <div className="help">User</div>
-          <select className="input" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
-            <option value="all">All users</option>
-            {members.map((m) => (
-              <option key={m.user_id} value={m.user_id}>
-                {m.display_name ?? m.user_id}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <div className="help">Category</div>
-          <select className="input" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="all">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          {search.trim() ? (
+            <button className="inputClear" aria-label="Clear search" onClick={() => setSearch('')}>
+              ×
+            </button>
+          ) : null}
         </div>
       </div>
+
+      <div className="row" style={{ marginTop: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="help">Filters</div>
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <button
+            className="btn btnGhost"
+            onClick={() => {
+              setTmpStart(start)
+              setTmpEnd(end)
+              setTmpUserFilter(userFilter)
+              setTmpCategoryFilter(categoryFilter)
+              setFiltersOpen(true)
+            }}
+          >
+            Show filters
+          </button>
+        </div>
+      </div>
+
+      {filtersOpen ? (
+        <div className="modalBackdrop" role="dialog" aria-modal="true" onClick={() => setFiltersOpen(false)}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <div>
+                <div style={{ fontWeight: 850, letterSpacing: -0.2 }}>Filters</div>
+                <div className="help">Refine the expenses list.</div>
+              </div>
+              <button className="btn btnGhost" onClick={() => setFiltersOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="modalBody">
+              <div className="filtersGrid" style={{ gridTemplateColumns: '1fr', gap: 12 }}>
+                <div className="dateRangeRow">
+                  <div>
+                    <div className="help">From</div>
+                    <input className="input" type="date" value={tmpStart} onChange={(e) => setTmpStart(e.target.value)} />
+                  </div>
+                  <div>
+                    <div className="help">To</div>
+                    <input className="input" type="date" value={tmpEnd} onChange={(e) => setTmpEnd(e.target.value)} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="help">User</div>
+                  <select className="input" value={tmpUserFilter} onChange={(e) => setTmpUserFilter(e.target.value)}>
+                    <option value="all">All users</option>
+                    {members.map((m) => (
+                      <option key={m.user_id} value={m.user_id}>
+                        {m.display_name ?? m.user_id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="help">Category</div>
+                  <button
+                    type="button"
+                    className="input"
+                    style={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
+                    onClick={() => setCatPickerOpen(true)}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      {(() => {
+                        const c = categories.find((x) => x.id === tmpCategoryFilter)
+                        const label = tmpCategoryFilter === 'all' ? 'All categories' : c?.name ?? 'All categories'
+                        const icon = tmpCategoryFilter === 'all' ? '•' : c?.icon ?? '•'
+                        const color = tmpCategoryFilter === 'all' ? 'rgba(148, 163, 184, 0.18)' : c?.color ?? 'rgba(148, 163, 184, 0.18)'
+                        return (
+                          <>
+                            <span
+                              aria-hidden
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 999,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: color,
+                                border: '1px solid rgba(15, 23, 42, 0.08)',
+                                flex: '0 0 auto',
+                              }}
+                            >
+                              <span style={{ fontSize: 16 }}>{icon}</span>
+                            </span>
+                            <span style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {label}
+                            </span>
+                          </>
+                        )
+                      })()}
+                    </span>
+                    <span aria-hidden style={{ color: '#64748b' }}>▾</span>
+                  </button>
+
+                  <CategoryPicker
+                    open={catPickerOpen}
+                    title="Filter by category"
+                    categories={[{ id: 'all', name: 'All categories', icon: '•', color: 'rgba(148, 163, 184, 0.18)' }, ...categories]}
+                    selectedId={tmpCategoryFilter}
+                    onSelect={(id) => setTmpCategoryFilter(id)}
+                    onClose={() => setCatPickerOpen(false)}
+                  />
+                </div>
+
+                <div className="row" style={{ marginTop: 6, justifyContent: 'space-between' }}>
+                  <button
+                    className="btn btnGhost"
+                    onClick={() => {
+                      setTmpStart(monthRange.start)
+                      setTmpEnd(monthRange.end)
+                      setTmpUserFilter('all')
+                      setTmpCategoryFilter('all')
+                    }}
+                  >
+                    Reset
+                  </button>
+
+                  <button
+                    className="btn btnPrimary"
+                    onClick={() => {
+                      setStart(tmpStart)
+                      setEnd(tmpEnd)
+                      setUserFilter(tmpUserFilter)
+                      setCategoryFilter(tmpCategoryFilter)
+                      setFiltersOpen(false)
+                    }}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="row" style={{ marginTop: 10, justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="row" style={{ alignItems: 'center' }}>
@@ -567,7 +710,7 @@ export default function ExpensesPage() {
                     <th style={{ textAlign: 'right' }}>Amount</th>
                     <th style={{ textAlign: 'right' }}>Base</th>
                     <th>Notes</th>
-                    {isOwner ? <th style={{ width: 140 }} /> : null}
+                    <th style={{ width: 140 }} />
                   </tr>
                 </thead>
                 <tbody>
@@ -614,11 +757,14 @@ export default function ExpensesPage() {
                         <td style={{ maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.notes ?? ''}
                         </td>
-                        {isOwner ? (
-                          <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {isOwner || (userId && r.created_by === userId) ? (
                             <button className="btn" style={{ padding: '6px 10px', borderRadius: 10 }} onClick={() => openEdit(r)}>
                               Edit
                             </button>
+                          ) : null}
+
+                          {isOwner || (userId && r.created_by === userId) ? (
                             <button
                               className="btn"
                               style={{ padding: '6px 10px', borderRadius: 10, marginLeft: 8 }}
@@ -627,8 +773,8 @@ export default function ExpensesPage() {
                             >
                               {deletingId === r.id ? '…' : 'Delete'}
                             </button>
-                          </td>
-                        ) : null}
+                          ) : null}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -743,7 +889,7 @@ export default function ExpensesPage() {
                   </button>
                 </div>
 
-                {isOwner ? (
+                {isOwner || (userId && edit.created_by === userId) ? (
                   <button
                     className="btn"
                     disabled={deletingId === edit.id}

@@ -169,7 +169,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="filtersGrid" style={{ gridTemplateColumns: '1.2fr 0.9fr 0.9fr', alignItems: 'end' }}>
+      <div className="filtersGrid dashboardFilters">
         <div className="dateRangeRow">
           <div>
             <div className="help">From</div>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
             <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
           </div>
         </div>
-        <div style={{ minWidth: 0 }}>
+        <div>
           <div className="help">User</div>
           <select className="input" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
             <option value="all">All users</option>
