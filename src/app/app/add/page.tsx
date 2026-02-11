@@ -8,6 +8,7 @@ import { useToast } from '@/components/ToastProvider'
 import { toMinorUnits } from '@/lib/money'
 import { getFxRate } from '@/lib/fx'
 import { clampLen, isYmd, parsePositiveAmount, sanitizePlainText } from '@/lib/validate'
+import { enqueue, flushQueue, peekAll } from '@/lib/offlineQueue'
 
 function stripName(x: string) {
   return sanitizePlainText(x).replace(/\s+/g, ' ').trim()
@@ -60,6 +61,23 @@ export default function AddExpensePage() {
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [creatingCat, setCreatingCat] = useState(false)
+
+  useEffect(() => {
+    async function onOnline() {
+      try {
+        if (!family?.id) return
+        const q = peekAll()
+        if (q.length === 0) return
+        const res = await flushQueue({ supabase, familyId: family.id })
+        if (res.flushed > 0) toast.success(`Synced ${res.flushed} offline change(s)`)
+      } catch {
+        // ignore
+      }
+    }
+
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [family?.id, toast])
 
   useEffect(() => {
     setDate(today)
@@ -153,20 +171,29 @@ export default function AddExpensePage() {
     try {
       const nextOrder = (categories?.reduce((m, c) => Math.max(m, Number((c as any).sort_order ?? 0)), -1) ?? -1) + 1
 
+      const payload = {
+        family_id: family.id,
+        name: clampLen(name, 40),
+        sort_order: nextOrder,
+        active: true,
+        icon: null,
+        color: null,
+      }
+
       const { data: inserted, error } = await supabase
         .from('categories')
-        .insert({
-          family_id: family.id,
-          name: clampLen(name, 40),
-          sort_order: nextOrder,
-          active: true,
-          icon: null,
-          color: null,
-        })
+        .insert(payload)
         .select('id, name, icon, color')
         .maybeSingle()
 
-      if (error) throw error
+      if (error) {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          enqueue({ type: 'category', createdAt: Date.now(), payload })
+          toast.info('Category saved offline. Will sync when you’re back online.')
+        } else {
+          throw error
+        }
+      }
 
       // Refresh list
       const { data: cats, error: cErr } = await supabase
@@ -229,7 +256,7 @@ export default function AddExpensePage() {
 
       const safeNotes = notesClean.trim() ? clampLen(notesClean.trim(), 280) : null
 
-      const { error } = await supabase.from('expenses').insert({
+      const payload = {
         family_id: family.id,
         created_by: session.user.id,
         category_id: categoryId,
@@ -242,11 +269,22 @@ export default function AddExpensePage() {
         fx_date: date,
         amount_base_minor: baseMinor,
         notes: safeNotes,
-      })
+      }
 
-      if (error) throw error
+      const { error } = await supabase.from('expenses').insert(payload)
 
-      toast.success('Expense added')
+      if (error) {
+        // If offline (or request failed), queue and continue.
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          enqueue({ type: 'expense', createdAt: Date.now(), payload })
+          toast.info('Saved offline. Will sync when you’re back online.')
+        } else {
+          throw error
+        }
+      } else {
+        toast.success('Expense added')
+      }
+
       setAmount('')
       setNotes('')
       // Keep the same date/category for fast entry.
