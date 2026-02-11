@@ -96,10 +96,7 @@ export default function AppHome() {
     }
   }, [router, load])
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    router.replace('/login')
-  }
+  // Sign out is available from the top-right profile menu.
 
   async function createInvite() {
     if (!family) return
@@ -145,19 +142,14 @@ export default function AppHome() {
 
   return (
     <main style={{ maxWidth: 720, margin: '40px auto', padding: 16 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>FamSpend</h1>
+      <h1 style={{ fontSize: 28, margin: 0 }}>Account</h1>
       <p style={{ color: '#475569', marginTop: 8 }}>
         Signed in as: <b>{email ?? '…'}</b>
       </p>
 
-      <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-        <button
-          onClick={signOut}
-          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: 'white', fontWeight: 700 }}
-        >
-          Sign out
-        </button>
-      </div>
+      <p style={{ color: '#64748b', marginTop: 6 }}>
+        Use the Account tab to invite family members and manage settings.
+      </p>
 
       {error ? (
         <div style={{ marginTop: 14, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: 10, borderRadius: 10 }}>
