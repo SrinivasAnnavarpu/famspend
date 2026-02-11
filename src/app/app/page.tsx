@@ -4,13 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ToastProvider'
 import { supabase } from '@/lib/supabaseClient'
-import { randomHex } from '@/lib/invite'
+import { clampLen } from '@/lib/validate'
 
 type Family = {
   id: string
   name: string
   base_currency: string
-  created_by: string
 }
 
 type Membership = {
@@ -18,18 +17,36 @@ type Membership = {
   role: string
 }
 
+function extractInviteToken(input: string) {
+  const s = input.trim()
+  if (!s) return null
+
+  // Accept token itself, full URL, or /invite/<token>
+  const m1 = s.match(/\/invite\/([a-f0-9]{16,64})/i)
+  if (m1?.[1]) return m1[1]
+
+  const m2 = s.match(/^([a-f0-9]{16,64})$/i)
+  if (m2?.[1]) return m2[1]
+
+  return null
+}
+
 export default function AppHome() {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+
+  const [busyCreate, setBusyCreate] = useState(false)
+  const [busyJoin, setBusyJoin] = useState(false)
+
   const [email, setEmail] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [family, setFamily] = useState<Family | null>(null)
   const [membership, setMembership] = useState<Membership | null>(null)
-  const toast = useToast()
   const [error, setError] = useState<string | null>(null)
+
   const [familyName, setFamilyName] = useState('My Family')
-  const [inviteLink, setInviteLink] = useState<string | null>(null)
-  const [inviteBusy, setInviteBusy] = useState(false)
+  const [inviteInput, setInviteInput] = useState('')
+  const [errs, setErrs] = useState<{ familyName?: string; invite?: string }>({})
 
   const authed = useMemo(() => Boolean(userId), [userId])
 
@@ -45,7 +62,6 @@ export default function AppHome() {
     setEmail(session.user.email ?? null)
     setUserId(session.user.id)
 
-    // Fetch membership(s). For MVP we assume a user is in 0 or 1 family.
     const { data: memberships, error: mErr } = await supabase
       .from('family_members')
       .select('family_id, role')
@@ -67,7 +83,7 @@ export default function AppHome() {
 
     const { data: fam, error: fErr } = await supabase
       .from('families')
-      .select('id, name, base_currency, created_by')
+      .select('id, name, base_currency')
       .eq('id', m.family_id)
       .maybeSingle()
 
@@ -76,189 +92,160 @@ export default function AppHome() {
       return
     }
 
-    setFamily(fam ?? null)
+    setFamily((fam as Family) ?? null)
+
+    // User has a family → send to dashboard.
+    router.replace('/app/dashboard')
   }, [router])
 
   useEffect(() => {
-    let mounted = true
-
-    load().finally(() => {
-      if (!mounted) return
-    })
-
+    void load()
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) router.replace('/login')
       else void load()
     })
-
-    return () => {
-      mounted = false
-      sub.subscription.unsubscribe()
-    }
+    return () => sub.subscription.unsubscribe()
   }, [router, load])
-
-  // Sign out is available from the top-right profile menu.
-
-  async function createInvite() {
-    if (!family) return
-    setInviteBusy(true)
-
-    async function copy(url: string) {
-      setInviteLink(url)
-      await navigator.clipboard.writeText(url)
-      toast.success('Invite link copied')
-    }
-
-    try {
-      // Preferred path: DB RPC
-      const { data: token, error } = await supabase.rpc('create_invite', { p_family_id: family.id })
-      if (!error && token) {
-        const url = `${window.location.origin}/invite/${token}`
-        await copy(url)
-        return
-      }
-
-      // Fallback path: direct insert (works if RLS policy allows and table exists)
-      const token2 = randomHex(16)
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      const { data: sessionData } = await supabase.auth.getSession()
-      const userId = sessionData.session?.user.id
-      if (!userId) throw error ?? new Error('Not authenticated')
-
-      const { error: insErr } = await supabase.from('family_invites').insert({
-        family_id: family.id,
-        created_by: userId,
-        token: token2,
-        expires_at: expiresAt,
-      })
-
-      if (insErr) throw error ?? insErr
-
-      const url = `${window.location.origin}/invite/${token2}`
-      await copy(url)
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      toast.error(msg, 'Invite failed')
-    } finally {
-      setInviteBusy(false)
-    }
-  }
 
   async function createFamily() {
     if (!userId) return
-    const name = familyName.trim() || 'My Family'
-    setBusy(true)
+
+    const name = familyName.trim()
+    const nextErrs: { familyName?: string } = {}
+    if (!name) nextErrs.familyName = 'Enter a family name'
+    setErrs((p) => ({ ...p, ...nextErrs }))
+    if (Object.keys(nextErrs).length > 0) {
+      toast.error('Please fix the highlighted fields')
+      return
+    }
+
+    setBusyCreate(true)
     setError(null)
     try {
       const { data: familyId, error: rpcErr } = await supabase.rpc('create_family', {
-        p_name: name,
+        p_name: clampLen(name, 60),
       })
 
       if (rpcErr) throw rpcErr
       if (!familyId) throw new Error('Failed to create family')
 
-      toast.success('Family created', name)
+      toast.success('Family created')
       await load()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
       toast.error(msg, 'Create family failed')
     } finally {
-      setBusy(false)
+      setBusyCreate(false)
+    }
+  }
+
+  async function joinWithInvite() {
+    const token = extractInviteToken(inviteInput)
+    const nextErrs: { invite?: string } = {}
+    if (!token) nextErrs.invite = 'Paste a valid invite link or token'
+
+    setErrs((p) => ({ ...p, ...nextErrs }))
+    if (Object.keys(nextErrs).length > 0) {
+      toast.error('Please fix the highlighted fields')
+      return
+    }
+
+    setBusyJoin(true)
+    try {
+      router.push(`/invite/${token}`)
+    } finally {
+      setBusyJoin(false)
     }
   }
 
   return (
-    <main style={{ maxWidth: 720, margin: '40px auto', padding: 16 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Account</h1>
-      <p style={{ color: '#475569', marginTop: 8 }}>
-        Signed in as: <b>{email ?? '…'}</b>
-      </p>
-
-      <p style={{ color: '#64748b', marginTop: 6 }}>
-        Use the Account tab to invite family members and manage settings.
-      </p>
-
-      {error ? (
-        <div style={{ marginTop: 14, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: 10, borderRadius: 10 }}>
-          {error}
+    <div className="container">
+      <div className="header">
+        <div>
+          <div className="brandTitle">Welcome</div>
+          <div className="help">Let’s get you set up.</div>
         </div>
-      ) : null}
+      </div>
 
-      <hr style={{ margin: '24px 0', border: 0, borderTop: '1px solid #e2e8f0' }} />
-
-      {!authed ? (
-        <p style={{ color: '#64748b' }}>Loading…</p>
-      ) : family ? (
-        <>
-          <h2 style={{ fontSize: 18, margin: 0 }}>Family</h2>
-          <p style={{ color: '#334155', marginTop: 8 }}>
-            <b>{family.name}</b> (base currency: {family.base_currency})
+      <div className="card">
+        <div className="cardBody" style={{ padding: 22 }}>
+          <div className="h2">Account</div>
+          <p className="p" style={{ marginTop: 6 }}>
+            Signed in as: <b>{email ?? '…'}</b>
           </p>
 
-          <div className="row" style={{ marginTop: 12 }}>
-            <button className="btn btnPrimary" onClick={() => router.push('/app/add')}>Add expense</button>
-            <button className="btn" onClick={() => router.push('/app/dashboard')}>Dashboard</button>
-            <button className="btn" onClick={() => router.push('/app/expenses')}>Expenses</button>
-          </div>
+          {error ? <div className="alertError" style={{ marginTop: 12 }}>{error}</div> : null}
 
-          <div className="card" id="invite" style={{ marginTop: 14 }}>
-            <div className="cardBody">
-              <div className="h2">Invite</div>
-              <p className="p" style={{ marginTop: 6 }}>Generate a single-use invite link (expires in 7 days).</p>
-              <div className="row" style={{ marginTop: 10, alignItems: 'center' }}>
-                <button className="btn" disabled={inviteBusy} onClick={() => void createInvite()}>
-                  {inviteBusy ? 'Generating…' : 'Create invite link'}
-                </button>
-                {inviteLink ? (
-                  <div className="badge" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {inviteLink}
+          <hr style={{ margin: '18px 0', border: 0, borderTop: '1px solid rgba(15, 23, 42, 0.10)' }} />
+
+          {!authed ? (
+            <p className="help">Loading…</p>
+          ) : family ? (
+            <p className="help">Redirecting to your dashboard…</p>
+          ) : (
+            <div className="row" style={{ alignItems: 'stretch', gap: 14 }}>
+              <div className="card" style={{ flex: '1 1 320px' }}>
+                <div className="cardBody">
+                  <div className="h2">Create a family</div>
+                  <p className="help" style={{ marginTop: 6 }}>You’ll be the owner and can invite others.</p>
+
+                  <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+                    <label style={{ display: 'grid', gap: 6 }}>
+                      <span className="help">Family name</span>
+                      <input
+                        className={errs.familyName ? 'input inputInvalid' : 'input'}
+                        value={familyName}
+                        onChange={(e) => {
+                          setFamilyName(e.target.value)
+                          setErrs((p) => ({ ...p, familyName: undefined }))
+                        }}
+                        placeholder="My Family"
+                      />
+                    </label>
+
+                    <button className="btn btnPrimary" disabled={busyCreate} onClick={() => void createFamily()}>
+                      {busyCreate ? 'Creating…' : 'Create family'}
+                    </button>
                   </div>
-                ) : null}
+                </div>
               </div>
-              <p className="help" style={{ marginTop: 8 }}>
-                Tip: open the link on the other phone. They’ll be asked to sign in, then joined to your family.
-              </p>
+
+              <div className="card" style={{ flex: '1 1 320px' }}>
+                <div className="cardBody">
+                  <div className="h2">Join with an invite</div>
+                  <p className="help" style={{ marginTop: 6 }}>Paste the link your family owner shared.</p>
+
+                  <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+                    <label style={{ display: 'grid', gap: 6 }}>
+                      <span className="help">Invite link or token</span>
+                      <input
+                        className={errs.invite ? 'input inputInvalid' : 'input'}
+                        value={inviteInput}
+                        onChange={(e) => {
+                          setInviteInput(e.target.value)
+                          setErrs((p) => ({ ...p, invite: undefined }))
+                        }}
+                        placeholder="https://…/invite/abcd… or abcd…"
+                      />
+                    </label>
+
+                    <button className="btn" disabled={busyJoin} onClick={() => void joinWithInvite()}>
+                      {busyJoin ? 'Opening…' : 'Open invite'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <h2 style={{ fontSize: 18, margin: 0 }}>Get started</h2>
-          <p style={{ color: '#64748b', marginTop: 8 }}>
-            You’re not in a family yet. Create one to start tracking expenses.
-          </p>
+          )}
 
-          <div style={{ marginTop: 14, maxWidth: 420 }}>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span className="help">Family name</span>
-              <input
-                className="input"
-                value={familyName}
-                onChange={(e) => setFamilyName(e.target.value)}
-                placeholder="My Family"
-              />
-            </label>
-            <p className="help" style={{ marginTop: 8 }}>
-              You can rename this later in Settings.
-            </p>
-          </div>
-
-          <button
-            className="btn btnPrimary"
-            disabled={busy}
-            onClick={createFamily}
-            style={{ marginTop: 12 }}
-          >
-            {busy ? 'Creating…' : 'Create family'}
-          </button>
-          {membership ? (
-            <p style={{ color: '#64748b', marginTop: 10 }}>
+          {membership && !family ? (
+            <p className="help" style={{ marginTop: 10 }}>
               (Found membership but couldn’t load family. This usually means an RLS/policy issue.)
             </p>
           ) : null}
-        </>
-      )}
-    </main>
+        </div>
+      </div>
+    </div>
   )
 }
