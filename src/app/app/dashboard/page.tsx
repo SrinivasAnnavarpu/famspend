@@ -169,16 +169,18 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="row" style={{ alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 200 }}>
-          <div className="help">From</div>
-          <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+      <div className="filtersGrid" style={{ gridTemplateColumns: '1.2fr 0.9fr 0.9fr', alignItems: 'end' }}>
+        <div className="dateRangeRow">
+          <div>
+            <div className="help">From</div>
+            <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          </div>
+          <div>
+            <div className="help">To</div>
+            <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </div>
         </div>
-        <div style={{ minWidth: 200 }}>
-          <div className="help">To</div>
-          <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-        </div>
-        <div style={{ minWidth: 240 }}>
+        <div style={{ minWidth: 0 }}>
           <div className="help">User</div>
           <select className="input" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
             <option value="all">All users</option>

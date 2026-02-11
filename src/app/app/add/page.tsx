@@ -314,7 +314,7 @@ export default function AddExpensePage() {
             <label style={{ display: 'grid', gap: 6 }}>
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="help">Category</span>
-                <button className="btn btnGhost" type="button" onClick={() => setCatModalOpen(true)}>
+                <button className="btn btnGhost btnGhostSmall" type="button" onClick={() => setCatModalOpen(true)}>
                   + New
                 </button>
               </div>
