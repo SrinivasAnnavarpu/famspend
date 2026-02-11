@@ -734,6 +734,10 @@ a {
   max-width: 100%;
   border-radius: 18px;
   overflow: hidden;
+  /* Prevent modal content from being clipped on short viewports (mobile landscape, iPad split view) */
+  max-height: calc(100vh - 36px);
+  display: flex;
+  flex-direction: column;
 }
 
 .modalHeader {
@@ -746,6 +750,7 @@ a {
 
 .modalBody {
   padding: 18px;
+  overflow: auto;
 }
 
 .formGrid2 {

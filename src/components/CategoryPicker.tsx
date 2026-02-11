@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export type PickerCategory = {
   id: string
@@ -42,7 +43,9 @@ export function CategoryPicker({
 
   if (!open) return null
 
-  return (
+  // Render via portal to escape any parent stacking/overflow contexts
+  // (important when opening this picker from inside another modal).
+  return createPortal(
     <div className="modalBackdrop" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="card modal" onClick={(e) => e.stopPropagation()}>
         <div className="modalHeader">
@@ -78,7 +81,14 @@ export function CategoryPicker({
               </button>
             ) : null}
 
-            <div style={{ maxHeight: '55vh', overflow: 'auto', borderRadius: 14, border: '1px solid rgba(15, 23, 42, 0.10)' }}>
+            <div
+              style={{
+                maxHeight: '55vh',
+                overflow: 'auto',
+                borderRadius: 14,
+                border: '1px solid rgba(15, 23, 42, 0.10)',
+              }}
+            >
               {filtered.length === 0 ? (
                 <div style={{ padding: 12, color: '#64748b' }}>No matches.</div>
               ) : (
@@ -121,7 +131,9 @@ export function CategoryPicker({
                         >
                           <span style={{ fontSize: 16 }}>{c.icon ?? '•'}</span>
                         </span>
-                        <span style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                        <span style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.name}
+                        </span>
                       </span>
                       {active ? <span style={{ color: '#1d4ed8', fontWeight: 900 }}>✓</span> : null}
                     </button>
@@ -132,6 +144,7 @@ export function CategoryPicker({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
