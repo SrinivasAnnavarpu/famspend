@@ -452,8 +452,20 @@ a {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: conic-gradient(from 180deg, #2563eb, #22c55e, #a855f7, #2563eb);
-  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.22);
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.10);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 950;
+  color: #1d4ed8;
+}
+
+.logo::after {
+  content: 'F';
+  font-size: 18px;
+  letter-spacing: -0.8px;
 }
 
 .brandTitle {

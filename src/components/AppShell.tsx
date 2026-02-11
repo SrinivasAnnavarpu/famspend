@@ -49,17 +49,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Mobile: drawer closed by default. Desktop: sidebar open by default.
+  // Drawer is closed by default; open only via hamburger.
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 860px)')
-
-    function sync() {
-      setOpen(!mq.matches)
-    }
-
-    sync()
-    mq.addEventListener?.('change', sync)
-    return () => mq.removeEventListener?.('change', sync)
+    setOpen(false)
   }, [])
 
   const who = useMemo(() => {
@@ -158,9 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {isOwner ? <NavLink href="/app/account/invite" label="Invite" onNavigate={() => setOpen(false)} /> : null}
           <NavLink href="/app/account/settings" label="Settings" onNavigate={() => setOpen(false)} />
 
-          <div className="sideFooter">
-            <span className="help">{pathname}</span>
-          </div>
+          {/* footer removed */}
         </aside>
 
         {open ? <div className="sideBackdrop" onClick={() => setOpen(false)} /> : null}
