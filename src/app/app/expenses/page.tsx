@@ -62,7 +62,7 @@ function toMajor(minor: number) {
 export default function ExpensesPage() {
   const router = useRouter()
   const toast = useToast()
-  const { loading, familyId, family, members, profile } = useCurrentFamily()
+  const { loading, familyId, family, members, profile, userId } = useCurrentFamily()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [rows, setRows] = useState<ExpenseRow[]>([])
@@ -104,6 +104,11 @@ export default function ExpensesPage() {
   const [end, setEnd] = useState(monthRange.end)
   const [userFilter, setUserFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+
+  const isOwner = useMemo(() => {
+    if (!userId) return false
+    return members.some((m) => m.user_id === userId && m.role === 'owner')
+  }, [members, userId])
 
   const memberName = useCallback(
     (uid: string) => members.find((m) => m.user_id === uid)?.display_name ?? uid.slice(0, 8),
@@ -326,6 +331,10 @@ export default function ExpensesPage() {
   const deleteExpense = useCallback(
     async (id: string) => {
       if (!familyId) return
+      if (!isOwner) {
+        toast.error('Only the family owner can delete expenses')
+        return
+      }
       if (!confirm('Delete this expense?')) return
 
       setDeletingId(id)
@@ -382,6 +391,10 @@ export default function ExpensesPage() {
 
   const deleteSelected = useCallback(async () => {
     if (!familyId) return
+    if (!isOwner) {
+      toast.error('Only the family owner can delete expenses')
+      return
+    }
     if (selectedIds.size === 0) return
     if (!confirm(`Delete ${selectedIds.size} expense(s)? This cannot be undone.`)) return
 
@@ -400,7 +413,7 @@ export default function ExpensesPage() {
     } finally {
       setBulkDeleting(false)
     }
-  }, [familyId, selectedIds, toast, load])
+  }, [familyId, selectedIds, toast, load, isOwner])
 
   return (
     <div className="container">
@@ -459,7 +472,7 @@ export default function ExpensesPage() {
       <div className="row" style={{ marginTop: 10, justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="row" style={{ alignItems: 'center' }}>
           <div className="badge">Total: {fmtMoney(totalBaseMinor, family?.base_currency ?? 'USD')}</div>
-          {selectedCount > 0 && !isMobile ? (
+          {selectedCount > 0 && !isMobile && isOwner ? (
             <div className="badge" style={{ marginLeft: 10 }}>
               Selected: {selectedCount}
             </div>
@@ -467,7 +480,7 @@ export default function ExpensesPage() {
         </div>
 
         <div className="row" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-          {selectedCount > 0 && !isMobile ? (
+          {selectedCount > 0 && !isMobile && isOwner ? (
             <button className="btn" disabled={bulkDeleting} onClick={() => void deleteSelected()}>
               {bulkDeleting ? 'Deleting…' : 'Delete selected'}
             </button>
@@ -536,21 +549,23 @@ export default function ExpensesPage() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th style={{ width: 44 }}>
-                      <input
-                        type="checkbox"
-                        checked={allLoadedSelected}
-                        aria-label="Select all loaded"
-                        onChange={toggleSelectAllLoaded}
-                      />
-                    </th>
+                    {isOwner ? (
+                      <th style={{ width: 44 }}>
+                        <input
+                          type="checkbox"
+                          checked={allLoadedSelected}
+                          aria-label="Select all loaded"
+                          onChange={toggleSelectAllLoaded}
+                        />
+                      </th>
+                    ) : null}
                     <th>Date</th>
                     <th>Category</th>
                     <th>Added by</th>
                     <th style={{ textAlign: 'right' }}>Amount</th>
                     <th style={{ textAlign: 'right' }}>Base</th>
                     <th>Notes</th>
-                    <th style={{ width: 140 }} />
+                    {isOwner ? <th style={{ width: 140 }} /> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -568,21 +583,23 @@ export default function ExpensesPage() {
                     ))
                   ) : rows.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ padding: 18, color: '#64748b' }}>
+                      <td colSpan={isOwner ? 8 : 7} style={{ padding: 18, color: '#64748b' }}>
                         No expenses for this range.
                       </td>
                     </tr>
                   ) : (
                     rows.map((r) => (
                       <tr key={r.id}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(r.id)}
-                            aria-label={`Select expense ${r.id}`}
-                            onChange={() => toggleSelectOne(r.id)}
-                          />
-                        </td>
+                        {isOwner ? (
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(r.id)}
+                              aria-label={`Select expense ${r.id}`}
+                              onChange={() => toggleSelectOne(r.id)}
+                            />
+                          </td>
+                        ) : null}
                         <td style={{ whiteSpace: 'nowrap' }}>{r.expense_date}</td>
                         <td>{normalizeCategory(r.categories)?.name ?? '—'}</td>
                         <td>{memberName(r.created_by)}</td>
@@ -595,19 +612,21 @@ export default function ExpensesPage() {
                         <td style={{ maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.notes ?? ''}
                         </td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <button className="btn" style={{ padding: '6px 10px', borderRadius: 10 }} onClick={() => openEdit(r)}>
-                            Edit
-                          </button>
-                          <button
-                            className="btn"
-                            style={{ padding: '6px 10px', borderRadius: 10, marginLeft: 8 }}
-                            disabled={deletingId === r.id}
-                            onClick={() => void deleteExpense(r.id)}
-                          >
-                            {deletingId === r.id ? '…' : 'Delete'}
-                          </button>
-                        </td>
+                        {isOwner ? (
+                          <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            <button className="btn" style={{ padding: '6px 10px', borderRadius: 10 }} onClick={() => openEdit(r)}>
+                              Edit
+                            </button>
+                            <button
+                              className="btn"
+                              style={{ padding: '6px 10px', borderRadius: 10, marginLeft: 8 }}
+                              disabled={deletingId === r.id}
+                              onClick={() => void deleteExpense(r.id)}
+                            >
+                              {deletingId === r.id ? '…' : 'Delete'}
+                            </button>
+                          </td>
+                        ) : null}
                       </tr>
                     ))
                   )}
@@ -722,13 +741,15 @@ export default function ExpensesPage() {
                   </button>
                 </div>
 
-                <button
-                  className="btn"
-                  disabled={deletingId === edit.id}
-                  onClick={() => void deleteExpense(edit.id)}
-                >
-                  {deletingId === edit.id ? '…' : 'Delete'}
-                </button>
+                {isOwner ? (
+                  <button
+                    className="btn"
+                    disabled={deletingId === edit.id}
+                    onClick={() => void deleteExpense(edit.id)}
+                  >
+                    {deletingId === edit.id ? '…' : 'Delete'}
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
