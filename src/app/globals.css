@@ -274,9 +274,15 @@ a {
     gap: 12px;
   }
   .dashboardControls > div {
+    width: 100%;
     min-width: 0 !important;
     margin-left: 0 !important;
   }
+}
+
+/* iOS date inputs often center the displayed value; keep it left-aligned like other controls */
+.input[type="date"] {
+  text-align: left;
 }
 
 @media (max-width: 860px) {
