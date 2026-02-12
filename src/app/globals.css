@@ -285,6 +285,11 @@ a {
   text-align: left;
 }
 
+/* Safari/iOS: the visible value is rendered in a sub-element */
+.input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 @media (max-width: 860px) {
   .topLinks {
     display: none;
