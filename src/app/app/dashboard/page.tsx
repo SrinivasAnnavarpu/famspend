@@ -206,14 +206,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="card" style={{ flex: '1 1 340px', display: 'flex' }}>
-          <div className="cardBody" style={{ flex: '1 1 auto' }}>
-            <div className="h2">Users</div>
-            <p className="p" style={{ marginTop: 6 }}>Totals in {family?.base_currency ?? 'base currency'} for selected range.</p>
-            <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+          <div className="cardBody" style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div className="badge" style={{ padding: '6px 10px', fontSize: 12, width: 'fit-content' }}>Users</div>
+            <p className="p" style={{ marginTop: 8, fontSize: 13 }}>Totals in {family?.base_currency ?? 'base currency'} for selected range.</p>
+            <div style={{ marginTop: 10, display: 'grid', gap: 8, width: '100%' }}>
               {members.map((m) => {
                 const v = (byUserMinor[m.user_id] ?? 0) / 100
                 return (
-                  <div key={m.user_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                  <div key={m.user_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 14 }}>
                     <div style={{ fontWeight: 750 }}>{m.display_name ?? m.user_id}</div>
                     <div style={{ fontVariantNumeric: 'tabular-nums' }}>{v.toFixed(2)}</div>
                   </div>
