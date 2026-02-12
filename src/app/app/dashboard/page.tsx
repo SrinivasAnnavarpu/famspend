@@ -193,20 +193,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="row" style={{ marginTop: 14 }}>
-        {/* Selected range + Users side-by-side on desktop; wraps on mobile */}
-        <div className="card" style={{ flex: '1 1 340px' }}>
-          <div className="cardBody" style={{ padding: 22 }}>
+      <div className="row" style={{ marginTop: 14, alignItems: 'stretch' }}>
+        {/* Selected range + Users same height on desktop; wraps on mobile */}
+        <div className="card" style={{ flex: '1 1 340px', display: 'flex' }}>
+          <div className="cardBody" style={{ padding: 22, flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
             <div className="badge">Selected range</div>
-            <h1 className="h1" style={{ marginTop: 12 }}>
+            <h1 className="h1" style={{ marginTop: 12, fontSize: 'clamp(32px, 4.2vw, 44px)' }}>
               {pretty} {family?.base_currency ?? ''}
             </h1>
-            <p className="p">Realtime enabled for this family.</p>
+            <p className="p" style={{ marginTop: 'auto' }}>Realtime enabled for this family.</p>
           </div>
         </div>
 
-        <div className="card" style={{ flex: '1 1 340px' }}>
-          <div className="cardBody">
+        <div className="card" style={{ flex: '1 1 340px', display: 'flex' }}>
+          <div className="cardBody" style={{ flex: '1 1 auto' }}>
             <div className="h2">Users</div>
             <p className="p" style={{ marginTop: 6 }}>Totals in {family?.base_currency ?? 'base currency'} for selected range.</p>
             <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
