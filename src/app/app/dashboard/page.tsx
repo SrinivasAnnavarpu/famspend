@@ -164,12 +164,10 @@ export default function DashboardPage() {
           <div className="brandTitle">Dashboard</div>
           <div className="help">{family ? `${family.name} • Base: ${family.base_currency}` : 'Loading…'}</div>
         </div>
-        <div className="row" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-          <button className="btn" onClick={exportCsv}>Export CSV</button>
-        </div>
       </div>
 
-      <div className="filtersGrid dashboardFilters">
+      {/* Desktop: all controls in one line (wraps on smaller widths/mobile) */}
+      <div className="dashboardControls" style={{ marginTop: 6 }}>
         <div className="dateRangeRow">
           <div>
             <div className="help">From</div>
@@ -180,7 +178,8 @@ export default function DashboardPage() {
             <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
           </div>
         </div>
-        <div>
+
+        <div style={{ minWidth: 220 }}>
           <div className="help">User</div>
           <select className="input" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
             <option value="all">All users</option>
@@ -190,6 +189,10 @@ export default function DashboardPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div style={{ marginLeft: 'auto', display: 'flex' }}>
+          <button className="btn" onClick={exportCsv}>Export CSV</button>
         </div>
       </div>
 
