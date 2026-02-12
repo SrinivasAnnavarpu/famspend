@@ -197,7 +197,7 @@ export default function DashboardPage() {
         {/* Selected range + Users same height on desktop; wraps on mobile */}
         <div className="card" style={{ flex: '1 1 340px', display: 'flex' }}>
           <div className="cardBody" style={{ padding: 22, flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
-            <div className="badge">Selected range</div>
+            <div className="badge" style={{ padding: '6px 10px', fontSize: 12 }}>Selected range</div>
             <h1 className="h1" style={{ marginTop: 12, fontSize: 'clamp(32px, 4.2vw, 44px)' }}>
               {pretty} {family?.base_currency ?? ''}
             </h1>
