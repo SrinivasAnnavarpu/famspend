@@ -257,7 +257,14 @@ a {
   display: flex;
   gap: 14px;
   align-items: flex-end;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* keep on one line for desktop */
+}
+
+/* Allow wrapping/stacking on narrower screens */
+@media (max-width: 860px) {
+  .dashboardControls {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 520px) {

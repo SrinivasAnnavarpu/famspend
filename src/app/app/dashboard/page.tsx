@@ -166,20 +166,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Desktop: all controls in one line (wraps on smaller widths/mobile) */}
+      {/* Desktop: From / To / User in one line, Export pinned to far right */}
       <div className="dashboardControls" style={{ marginTop: 6 }}>
-        <div className="dateRangeRow">
-          <div>
-            <div className="help">From</div>
-            <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          </div>
-          <div>
-            <div className="help">To</div>
-            <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-          </div>
+        <div style={{ minWidth: 170 }}>
+          <div className="help">From</div>
+          <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
 
-        <div style={{ minWidth: 220 }}>
+        <div style={{ minWidth: 170 }}>
+          <div className="help">To</div>
+          <input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+        </div>
+
+        <div style={{ minWidth: 240 }}>
           <div className="help">User</div>
           <select className="input" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
             <option value="all">All users</option>
